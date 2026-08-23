@@ -9,8 +9,7 @@ El servicio usa `nginx:alpine` y sirve el contenido estático desde:
 
 La carpeta `/storage/webservices/alimentacion-emma/db` queda reservada para la
 persistencia futura y no es modificada por este despliegue.
-El compose publica el sitio en el puerto `8080` por defecto; puedes cambiarlo con
-`WEB_PORT`.
+El compose publica el sitio en el puerto `8083` del servidor.
 
 ```sh
 mkdir -p /storage/webservices/alimentacion-emma/html \

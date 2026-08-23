@@ -4,9 +4,9 @@ services:
     container_name: alimentacion-emma
     restart: unless-stopped
     ports:
-      - "${WEB_PORT:-8080}:80"
+      - "8083:80"
     volumes:
-      - ${WEB_ROOT:-/storage/webservices/alimentacion-emma}/html:/usr/share/nginx/html:ro
+      - /storage/webservices/alimentacion-emma/html:/usr/share/nginx/html:ro
     read_only: true
     tmpfs:
       - /var/cache/nginx
