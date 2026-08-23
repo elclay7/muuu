@@ -49,19 +49,11 @@ jobs:
         run: |
           ssh -p "$SSH_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "DEPLOY_PATH='$DEPLOY_PATH' bash -s" <<'REMOTE'
           set -euo pipefail
-          staging="$DEPLOY_PATH/.html-next"
-          rm -rf "$staging"
-          mkdir -p "$staging" "$DEPLOY_PATH/html" "$DEPLOY_PATH/db"
+          mkdir -p "$DEPLOY_PATH/html" "$DEPLOY_PATH/db"
           REMOTE
 
           rsync -az --delete -e "ssh -p $SSH_PORT" docs/ \
-            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/.html-next/"
-
-          ssh -p "$SSH_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "DEPLOY_PATH='$DEPLOY_PATH' bash -s" <<'REMOTE'
-          set -euo pipefail
-          rm -rf "$DEPLOY_PATH/html"
-          mv "$DEPLOY_PATH/.html-next" "$DEPLOY_PATH/html"
-          REMOTE
+            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/html/"
 
           curl --fail --show-error --silent --retry 3 --retry-delay 5 \
             -X POST "$PORTAINER_WEBHOOK_URL"

@@ -31,8 +31,10 @@ contenido y solicita un redeploy limpio.
 El flujo queda así:
 
 1. Push a `main`.
-2. GitHub Actions prepara la nueva versión en una carpeta temporal del servidor.
-3. Reemplaza `/storage/webservices/alimentacion-emma/html` sin tocar `db`.
+2. GitHub Actions sincroniza `docs/` dentro de
+	`/storage/webservices/alimentacion-emma/html`, eliminando archivos antiguos
+	sin reemplazar la carpeta montada por Docker.
+3. No modifica `/storage/webservices/alimentacion-emma/db`.
 4. Llama al webhook de Portainer; Portainer detiene y vuelve a crear el contenedor.
 
 El workflow está en `.github/workflows/deploy.yml`. Configura estos secretos del
