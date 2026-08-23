@@ -69,7 +69,22 @@
           message.textContent = error.message;
         }
       });
-      row.append(form, message);
+      const deleteButton = document.createElement("button");
+      deleteButton.className = "delete-user";
+      deleteButton.type = "button";
+      deleteButton.title = "Eliminar usuario";
+      deleteButton.setAttribute("aria-label", `Eliminar usuario ${user.username}`);
+      deleteButton.textContent = "Eliminar";
+      deleteButton.addEventListener("click", async () => {
+        if (!window.confirm(`¿Eliminar el usuario ${user.username}?`)) return;
+        try {
+          await request(`/api/users/${user.id}`, { method: "DELETE" });
+          renderUsers((await request("/api/users")).users);
+        } catch (error) {
+          message.textContent = error.message;
+        }
+      });
+      row.append(form, deleteButton, message);
       usersList.appendChild(row);
     });
   }

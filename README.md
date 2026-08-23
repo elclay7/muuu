@@ -35,7 +35,8 @@ intervalos y credenciales se almacenan en SQLite dentro de `db`. Una vez creado
 el usuario, los intervalos se cambian directamente haciendo click en `cada X h`
 desde la pantalla principal. `/admin` no aparece como opción de navegación y
 solo acepta sesiones con rol administrador. La tabla de usuarios permite cambiar
-la contraseña de cualquier cuenta.
+la contraseña de cualquier cuenta y eliminar usuarios. La cuenta administradora
+activa no puede eliminarse y siempre debe existir al menos un administrador.
 
 En Portainer, crea un Stack desde este repositorio (`main`) usando
 `docker-compose.yml`. La ruta del volumen es del host donde corre Docker, no del

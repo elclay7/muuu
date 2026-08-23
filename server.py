@@ -191,12 +191,12 @@ class Handler(BaseHTTPRequestHandler):
             self.create_user(data, "admin")
         elif path == "/api/auth/login":
             with connection() as db:
-                user = db.execute("SELECT username, password_hash, role FROM users WHERE username = ?", (data.get("username", ""),)).fetchone()
+                user = db.execute("SELECT id, username, password_hash, role FROM users WHERE username = ?", (data.get("username", ""),)).fetchone()
             if not user or not isinstance(data.get("username"), str) or not password_matches(data.get("password", ""), user["password_hash"]) or data["username"] != user["username"]:
                 self.send_json(HTTPStatus.UNAUTHORIZED, {"error": "Usuario o contraseña incorrectos"})
                 return
             token = secrets.token_urlsafe(32)
-            sessions[token] = {"username": user["username"], "role": user["role"], "expires": time.time() + SESSION_TTL}
+            sessions[token] = {"user_id": user["id"], "username": user["username"], "role": user["role"], "expires": time.time() + SESSION_TTL}
             self.send_json(HTTPStatus.OK, {"username": user["username"]}, {"Set-Cookie": f"session={token}; Path=/; HttpOnly; SameSite=Strict; Max-Age={SESSION_TTL}"})
         elif path == "/api/auth/logout":
             cookies = http.cookies.SimpleCookie(self.headers.get("Cookie", ""))
@@ -256,6 +256,33 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 db.execute("UPDATE schedules SET interval_hours = ?, times = ? WHERE group_name = ?", (interval, json.dumps(times), group))
         self.send_json(HTTPStatus.OK, data)
+
+    def do_DELETE(self):
+        path = urlparse(self.path).path
+        if not path.startswith("/api/users/"):
+            self.send_json(HTTPStatus.NOT_FOUND, {"error": "Ruta no encontrada"})
+            return
+        if not self.require_admin():
+            return
+        try:
+            user_id = int(path.split("/")[3])
+        except (IndexError, ValueError):
+            self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Usuario inválido"})
+            return
+        session = self.current_session()
+        if session["user_id"] == user_id:
+            self.send_json(HTTPStatus.BAD_REQUEST, {"error": "No puedes eliminar tu propia cuenta"})
+            return
+        with connection() as db:
+            user = db.execute("SELECT role FROM users WHERE id = ?", (user_id,)).fetchone()
+            if not user:
+                self.send_json(HTTPStatus.NOT_FOUND, {"error": "Usuario no encontrado"})
+                return
+            if user["role"] == "admin" and db.execute("SELECT COUNT(*) FROM users WHERE role = 'admin'").fetchone()[0] <= 1:
+                self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Debe existir al menos un administrador"})
+                return
+            db.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        self.send_json(HTTPStatus.OK, {"message": "Usuario eliminado"})
 
     def create_user(self, data, role):
         username = data.get("username", "")

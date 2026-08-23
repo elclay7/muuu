@@ -213,6 +213,18 @@ a {
   cursor: pointer;
 }
 
+.delete-user {
+  border: 0;
+  border-radius: 8px;
+  padding: 7px 9px;
+  color: white;
+  background: #c62828;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .user-row small {
   color: #218739;
   white-space: nowrap;
