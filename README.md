@@ -38,9 +38,12 @@ El flujo queda así:
 
 El workflow está en `.github/workflows/deploy.yml`. Configura estos secretos del
 repositorio: `DEPLOY_HOST`, `DEPLOY_USER`, `SSH_PRIVATE_KEY` y
-`PORTAINER_WEBHOOK_URL` y `SSH_PORT` (en tu caso, `7422`).
+`PORTAINER_WEBHOOK_URL` y `SSH_PORT`. Para GitHub Actions configura
+`SSH_PORT=75422`, que es el puerto SSH publicado desde Internet. El puerto `22`
+es el acceso desde la red interna.
 
 El workflow obtiene automáticamente la clave pública del host mediante
-`ssh-keyscan` en el puerto definido en `SSH_PORT`, por lo que no necesitas crear el secreto
-`DEPLOY_KNOWN_HOSTS`. El webhook debe ser el endpoint de redeploy del stack en
+`ssh-keyscan` en el puerto definido en `SSH_PORT` (`75422` para acceso externo),
+por lo que no necesitas crear
+el secreto `DEPLOY_KNOWN_HOSTS`. El webhook debe ser el endpoint de redeploy del stack en
 Portainer; no lo expongas en el repositorio ni lo guardes como texto plano.

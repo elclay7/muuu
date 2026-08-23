@@ -7,7 +7,6 @@ services:
       - "${WEB_PORT:-8080}:80"
     volumes:
       - ${WEB_ROOT:-/storage/webservices/alimentacion-emma}/html:/usr/share/nginx/html:ro
-      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     read_only: true
     tmpfs:
       - /var/cache/nginx
@@ -15,7 +14,7 @@ services:
     security_opt:
       - no-new-privileges:true
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1/healthz"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1/"]
       interval: 30s
       timeout: 5s
       retries: 3
