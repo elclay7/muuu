@@ -363,6 +363,10 @@ input:focus-visible {
   gap: 6px;
 }
 
+.interval-edit[hidden] {
+  display: none;
+}
+
 .interval-input {
   width: 54px;
   border: 1px solid var(--border-soft);
