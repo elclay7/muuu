@@ -38,6 +38,7 @@ jobs:
           SSH_PORT: ${{ secrets.SSH_PORT }}
         run: |
           rsync -az -e "ssh -p $SSH_PORT" docker-compose.yml "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
+          rsync -az -e "ssh -p $SSH_PORT" Dockerfile nginx.conf server.py "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
 
       - name: Replace HTML and restart through Portainer
         env:

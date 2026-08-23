@@ -3,7 +3,8 @@ Lactancia - Horarios de alimentación
 
 ## Despliegue con Docker y Portainer
 
-El servicio usa `nginx:alpine` y sirve el contenido estático desde:
+El servicio usa `nginx:alpine` como proxy y un backend Python con SQLite. El
+contenido estático se sirve desde:
 
 `/storage/webservices/alimentacion-emma/html`
 
@@ -15,8 +16,12 @@ El compose publica el sitio en el puerto `8083` del servidor.
 mkdir -p /storage/webservices/alimentacion-emma/html \
 	/storage/webservices/alimentacion-emma/db
 cp -R docs/. /storage/webservices/alimentacion-emma/html/
-docker compose up -d
+docker compose up -d --build
 ```
+
+En la primera visita, abre `/admin` para crear el usuario familiar. Después,
+ambos padres ingresan con las mismas credenciales desde `/login`. Los horarios,
+intervalos y credenciales se almacenan en SQLite dentro de `db`.
 
 En Portainer, crea un Stack desde este repositorio (`main`) usando
 `docker-compose.yml`. La ruta del volumen es del host donde corre Docker, no del
@@ -35,7 +40,8 @@ El flujo queda así:
 	`/storage/webservices/alimentacion-emma/html`, eliminando archivos antiguos
 	sin reemplazar la carpeta montada por Docker.
 3. No modifica `/storage/webservices/alimentacion-emma/db`.
-4. Llama al webhook de Portainer; Portainer detiene y vuelve a crear el contenedor.
+4. Sincroniza el backend y la infraestructura, y llama al webhook de Portainer.
+5. Portainer reconstruye el backend y vuelve a crear los dos contenedores.
 
 El workflow está en `.github/workflows/deploy.yml`. Configura estos secretos del
 repositorio: `DEPLOY_HOST`, `DEPLOY_USER`, `SSH_PRIVATE_KEY` y

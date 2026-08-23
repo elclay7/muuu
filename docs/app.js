@@ -3,54 +3,28 @@
 
   const TIMEZONE = "America/Santiago";
 
-  /** Configuración de cada lista de horarios */
-  const SCHEDULES = {
-    tomas: {
-      storageKey: "lactancia_tomas",
-      defaults: ["02:30", "05:30", "08:30", "11:30", "14:30", "17:30", "20:30", "23:30"],
-      intervalMinutes: 180,
-      label: "Toma",
-      listElId: "lista-tomas"
-    },
-    extracciones: {
-      storageKey: "lactancia_extracciones",
-      defaults: ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00", "22:00"],
-      intervalMinutes: 120,
-      label: "Extracción",
-      listElId: "lista-extracciones"
-    }
-  };
+  const schedules = {};
 
   // Índice de la tarjeta actualmente en edición (evita mezclar dos ediciones a la vez)
   let editing = null; // { group, index } | null
 
-  /* ---------------------------------------------------------
-   * Persistencia
-   * --------------------------------------------------------- */
-
-  function loadSchedule(group) {
-    const cfg = SCHEDULES[group];
-    try {
-      const raw = localStorage.getItem(cfg.storageKey);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length === cfg.defaults.length) {
-          return parsed;
-        }
-      }
-    } catch (e) {
-      // localStorage corrupto o inaccesible: se usa el valor por defecto
+  async function request(url, options) {
+    const response = await fetch(url, options);
+    if (response.status === 401) {
+      window.location.href = "/login";
+      throw new Error("No autenticado");
     }
-    return [...cfg.defaults];
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "No fue posible completar la operación.");
+    return data;
   }
 
-  function saveSchedule(group, arr) {
-    localStorage.setItem(SCHEDULES[group].storageKey, JSON.stringify(arr));
-  }
-
-  function resetAll() {
-    Object.values(SCHEDULES).forEach((cfg) => localStorage.removeItem(cfg.storageKey));
-    location.reload();
+  async function saveSchedules() {
+    await request("/api/schedules", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(schedules)
+    });
   }
 
   /* ---------------------------------------------------------
@@ -81,7 +55,6 @@
     return h * 60 + m;
   }
 
-  /** Devuelve el índice del "siguiente" evento según el algoritmo de la especificación */
   function findNextIndex(arr, nowMinutes) {
     for (let i = 0; i < arr.length; i++) {
       if (timeToMinutes(arr[i]) > nowMinutes) {
@@ -96,20 +69,17 @@
    * --------------------------------------------------------- */
 
   function applyCascade(group, anchorIndex, newTimeStr) {
-    const cfg = SCHEDULES[group];
-    const arr = loadSchedule(group);
+    const cfg = schedules[group];
     const anchorMinutes = timeToMinutes(newTimeStr);
-    const result = arr.map((_, i) => {
-      const offset = (i - anchorIndex) * cfg.intervalMinutes;
+    const result = cfg.times.map((_, i) => {
+      const offset = (i - anchorIndex) * cfg.interval * 60;
       return minutesToTime(anchorMinutes + offset);
     });
-    saveSchedule(group, result);
+    cfg.times = result;
   }
 
   function applyIndividual(group, index, newTimeStr) {
-    const arr = loadSchedule(group);
-    arr[index] = newTimeStr;
-    saveSchedule(group, arr);
+    schedules[group].times[index] = newTimeStr;
   }
 
   /* ---------------------------------------------------------
@@ -119,11 +89,12 @@
   const template = document.getElementById("tpl-card");
 
   function renderGroup(group) {
-    const cfg = SCHEDULES[group];
-    const container = document.getElementById(cfg.listElId);
-    const arr = loadSchedule(group);
+    const cfg = schedules[group];
+    const container = document.getElementById(`lista-${group}`);
+    const arr = cfg.times;
     const nowMinutes = nowInSantiagoMinutes();
     const nextIndex = findNextIndex(arr, nowMinutes);
+    document.getElementById(`interval-${group}`).textContent = `cada ${cfg.interval} h`;
 
     container.innerHTML = "";
 
@@ -140,7 +111,7 @@
       node.dataset.group = group;
       node.dataset.index = String(index);
 
-      node.querySelector(".card-label").textContent = `${cfg.label} ${index + 1}`;
+      node.querySelector(".card-label").textContent = `${group === "tomas" ? "Toma" : "Extracción"} ${index + 1}`;
       node.querySelector(".card-time").textContent = timeStr;
 
       const isEditingThis = editing && editing.group === group && editing.index === index;
@@ -170,7 +141,7 @@
         const val = input.value || timeStr;
         applyCascade(group, index, val);
         editing = null;
-        renderAll();
+        saveSchedules().then(renderAll);
       });
 
       // Guardar individual
@@ -178,7 +149,7 @@
         const val = input.value || timeStr;
         applyIndividual(group, index, val);
         editing = null;
-        renderAll();
+        saveSchedules().then(renderAll);
       });
 
       container.appendChild(node);
@@ -221,11 +192,20 @@
    * --------------------------------------------------------- */
 
   function init() {
-    document.getElementById("btn-reset").addEventListener("click", () => {
+    document.getElementById("btn-reset").addEventListener("click", async () => {
       const confirmed = window.confirm(
         "¿Restablecer todos los horarios a los valores por defecto?"
       );
-      if (confirmed) resetAll();
+      if (confirmed) {
+        await request("/api/schedules/reset", { method: "POST" });
+        Object.assign(schedules, await request("/api/schedules"));
+        renderAll();
+      }
+    });
+
+    document.getElementById("btn-logout").addEventListener("click", async () => {
+      await request("/api/auth/logout", { method: "POST" });
+      window.location.href = "/login";
     });
 
     updateClock();
@@ -238,5 +218,13 @@
     }, 30000);
   }
 
-  document.addEventListener("DOMContentLoaded", init);
+  document.addEventListener("DOMContentLoaded", async () => {
+    const status = await request("/api/auth/status");
+    if (!status.authenticated) {
+      window.location.href = status.configured ? "/login" : "/admin";
+      return;
+    }
+    Object.assign(schedules, await request("/api/schedules"));
+    init();
+  });
 })();

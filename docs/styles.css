@@ -34,6 +34,130 @@ body {
 button {
   font-family: inherit;
 }
+
+a {
+  color: var(--accent);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.header-actions a {
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.header-actions button,
+.secondary-btn {
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 7px 12px;
+  color: var(--text-secondary);
+  background: transparent;
+  cursor: pointer;
+}
+
+.auth-page {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.auth-panel {
+  width: min(100%, 440px);
+  padding: 36px;
+  background: var(--card-bg-solid);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+}
+
+.admin-panel {
+  width: min(100%, 520px);
+}
+
+.auth-panel h2 {
+  margin: 8px 0 22px;
+  font-size: 28px;
+}
+
+.auth-kicker {
+  margin: 28px 0 0;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.auth-form,
+.settings-form {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-form label,
+.settings-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.auth-form input,
+.settings-form input {
+  width: 100%;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 11px 12px;
+  font: inherit;
+  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.primary-btn {
+  border: 0;
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: white;
+  background: var(--accent);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.secondary-btn {
+  margin-top: 20px;
+}
+
+.auth-note,
+.form-error,
+.form-message {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.form-error {
+  min-height: 20px;
+  margin: 0;
+  color: #c62828;
+}
+
+.form-message {
+  min-height: 20px;
+  margin: 0;
+  color: #218739;
+}
+
+.auth-panel > p:last-child {
+  margin: 24px 0 0;
+  font-size: 13px;
+}
 button:focus-visible,
 input:focus-visible {
   outline: 2px solid var(--accent);

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Administración | Horarios de Lactancia</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="auth-page">
+  <main class="auth-panel admin-panel">
+    <div class="brand"><span class="brand-dot"></span><h1>Administración</h1></div>
+    <p class="auth-kicker">Horarios de Lactancia</p>
+    <section id="setup-section">
+      <h2>Crear usuario familiar</h2>
+      <p class="auth-note">Ambos padres usarán este mismo usuario para compartir los horarios.</p>
+      <form id="setup-form" class="auth-form">
+        <label>Usuario<input name="username" minlength="3" autocomplete="username" required></label>
+        <label>Contraseña<input name="password" type="password" minlength="8" autocomplete="new-password" required></label>
+        <label>Repetir contraseña<input name="confirmation" type="password" minlength="8" autocomplete="new-password" required></label>
+        <p id="setup-error" class="form-error" role="alert"></p>
+        <button class="primary-btn" type="submit">Crear usuario</button>
+      </form>
+    </section>
+    <section id="settings-section" hidden>
+      <h2>Configuración de horarios</h2>
+      <p class="auth-note">Los cambios se aplican a ambos padres y a las cascadas futuras.</p>
+      <form id="settings-form" class="settings-form">
+        <label>Intervalo de tomas (horas)<input name="tomas" type="number" min="1" max="24" required></label>
+        <label>Intervalo de extracciones (horas)<input name="extracciones" type="number" min="1" max="24" required></label>
+        <p id="settings-message" class="form-message" role="status"></p>
+        <button class="primary-btn" type="submit">Guardar intervalos</button>
+      </form>
+      <button id="logout-button" class="secondary-btn" type="button">Cerrar sesión</button>
+    </section>
+    <p><a href="/">Volver a horarios</a></p>
+  </main>
+  <script src="admin.js"></script>
+</body>
+</html>

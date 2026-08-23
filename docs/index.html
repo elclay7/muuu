@@ -18,6 +18,10 @@
         <time id="clock" class="clock" aria-live="polite">--:--:--</time>
         <p id="today" class="today-date">-</p>
       </div>
+      <nav class="header-actions" aria-label="Cuenta">
+        <a href="/admin">Administración</a>
+        <button id="btn-logout" type="button">Salir</button>
+      </nav>
     </div>
   </header>
 
@@ -28,7 +32,7 @@
         <div class="column-heading">
           <span class="column-icon" aria-hidden="true">🍼</span>
           <h2 id="titulo-bebe">Tomas del Bebé</h2>
-          <span class="interval-pill">cada 3 h</span>
+          <span id="interval-tomas" class="interval-pill">cada 3 h</span>
         </div>
         <div id="lista-tomas" class="card-list"></div>
       </section>
@@ -37,7 +41,7 @@
         <div class="column-heading">
           <span class="column-icon" aria-hidden="true">🤱</span>
           <h2 id="titulo-mama">Extracciones Mamá</h2>
-          <span class="interval-pill">cada 2 h</span>
+          <span id="interval-extracciones" class="interval-pill">cada 2 h</span>
         </div>
         <div id="lista-extracciones" class="card-list"></div>
       </section>

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ingresar | Horarios de Lactancia</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="auth-page">
+  <main class="auth-panel">
+    <div class="brand"><span class="brand-dot"></span><h1>Horarios de Lactancia</h1></div>
+    <p class="auth-kicker">Espacio familiar</p>
+    <h2>Ingresar</h2>
+    <form id="login-form" class="auth-form">
+      <label>Usuario<input name="username" autocomplete="username" required></label>
+      <label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label>
+      <p id="login-error" class="form-error" role="alert"></p>
+      <button class="primary-btn" type="submit">Ingresar</button>
+    </form>
+    <p id="setup-link" class="auth-note"><a href="/admin">Configurar usuario administrador</a></p>
+  </main>
+  <script src="login.js"></script>
+</body>
+</html>
