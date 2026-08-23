@@ -56,8 +56,8 @@ El flujo queda así:
 3. No modifica `/storage/webservices/alimentacion-emma/db`.
 4. Portainer obtiene del repositorio el backend, Nginx y Compose, y reconstruye
 	las imágenes antes del redeploy.
-5. El workflow elimina `ws-app` y `ws-db` y Portainer reconstruye y vuelve a
-	crear ambos contenedores, por lo que existe una breve ventana de reinicio.
+5. El workflow llama al webhook. Portainer reconstruye y vuelve a crear
+	`ws-app` y `ws-db`, por lo que existe una breve ventana de reinicio.
 
 El workflow está en `.github/workflows/deploy.yml`. Configura estos secretos del
 repositorio: `DEPLOY_HOST`, `DEPLOY_USER`, `SSH_PRIVATE_KEY` y
@@ -68,5 +68,6 @@ es el acceso desde la red interna.
 El workflow obtiene automáticamente la clave pública del host mediante
 `ssh-keyscan` en el puerto definido en `SSH_PORT` (`75422` para acceso externo),
 por lo que no necesitas crear
-el secreto `DEPLOY_KNOWN_HOSTS`. El webhook debe ser el endpoint de redeploy del stack en
-Portainer; no lo expongas en el repositorio ni lo guardes como texto plano.
+el secreto `DEPLOY_KNOWN_HOSTS`. El webhook debe ser el endpoint de redeploy del
+stack en Portainer, no la URL general de Portainer. No lo expongas en el
+repositorio ni lo guardes como texto plano.
