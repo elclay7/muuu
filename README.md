@@ -8,8 +8,14 @@ contenido estático se sirve desde:
 
 `/storage/webservices/alimentacion-emma/html`
 
-Los contenedores se llaman `ws-app` y `ws-db`. La base SQLite no usa un
-contenedor separado: se persiste en `/storage/webservices/alimentacion-emma/db`.
+Los contenedores se llaman `ws-app` (Nginx) y `ws-db` (backend SQLite). La base
+SQLite no usa un contenedor separado: se persiste en
+`/storage/webservices/alimentacion-emma/db`.
+
+La configuración de Nginx se incorpora en la imagen mediante
+`Dockerfile.nginx`; no se monta ningún archivo `nginx.conf` desde el servidor.
+Por eso, en `/storage/webservices/alimentacion-emma` solo deben existir `html`
+y `db`.
 
 La carpeta `/storage/webservices/alimentacion-emma/db` queda reservada para la
 persistencia futura y no es modificada por este despliegue.
@@ -46,7 +52,8 @@ El flujo queda así:
 	`/storage/webservices/alimentacion-emma/html`, eliminando archivos antiguos
 	sin reemplazar la carpeta montada por Docker.
 3. No modifica `/storage/webservices/alimentacion-emma/db`.
-4. Sincroniza el backend y la infraestructura, y llama al webhook de Portainer.
+4. Portainer obtiene del repositorio el backend, Nginx y Compose, y reconstruye
+	las imágenes antes del redeploy.
 5. Portainer reconstruye el backend y vuelve a crear los dos contenedores.
 
 El workflow está en `.github/workflows/deploy.yml`. Configura estos secretos del

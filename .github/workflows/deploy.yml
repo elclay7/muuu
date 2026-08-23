@@ -30,16 +30,6 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -p "$SSH_PORT" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
 
-      - name: Upload deployment files
-        env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_PATH: /storage/webservices/alimentacion-emma
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-        run: |
-          rsync -az -e "ssh -p $SSH_PORT" docker-compose.yml "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
-          rsync -az -e "ssh -p $SSH_PORT" Dockerfile nginx.conf server.py "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
-
       - name: Replace HTML and restart through Portainer
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
@@ -50,10 +40,12 @@ jobs:
         run: |
           ssh -p "$SSH_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "DEPLOY_PATH='$DEPLOY_PATH' bash -s" <<'REMOTE'
           set -euo pipefail
+          rm -rf "$DEPLOY_PATH/deploy"
+          rm -f "$DEPLOY_PATH/Dockerfile" "$DEPLOY_PATH/Dockerfile.nginx" "$DEPLOY_PATH/nginx.conf" "$DEPLOY_PATH/server.py" "$DEPLOY_PATH/docker-compose.yml"
           mkdir -p "$DEPLOY_PATH/html" "$DEPLOY_PATH/db"
           REMOTE
 
-          rsync -az --delete -e "ssh -p $SSH_PORT" docs/ \
+          rsync -az --delete --chmod=F644,D755 -e "ssh -p $SSH_PORT" docs/ \
             "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/html/"
 
           curl --fail --show-error --silent --retry 3 --retry-delay 5 \
