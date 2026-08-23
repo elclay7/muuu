@@ -1,9 +1,12 @@
 (() => {
   const setupSection = document.getElementById("setup-section");
   const settingsSection = document.getElementById("settings-section");
+  const adminLoginSection = document.getElementById("admin-login-section");
   const setupForm = document.getElementById("setup-form");
+  const adminLoginForm = document.getElementById("admin-login-form");
   const userForm = document.getElementById("user-form");
   const setupError = document.getElementById("setup-error");
+  const adminLoginError = document.getElementById("admin-login-error");
   const userMessage = document.getElementById("user-message");
   const usersList = document.getElementById("users-list");
 
@@ -18,14 +21,22 @@
     const status = await request("/api/auth/status");
     if (!status.configured) {
       setupSection.hidden = false;
+      adminLoginSection.hidden = true;
       settingsSection.hidden = true;
       return;
     }
     if (!status.authenticated || status.role !== "admin") {
-      window.location.href = status.authenticated ? "/" : "/login";
+      setupSection.hidden = true;
+      adminLoginSection.hidden = false;
+      settingsSection.hidden = true;
+      if (status.authenticated) {
+        adminLoginError.textContent = "Esta cuenta no tiene permisos de administrador.";
+        adminLoginForm.hidden = true;
+      }
       return;
     }
     setupSection.hidden = true;
+    adminLoginSection.hidden = true;
     settingsSection.hidden = false;
     renderUsers((await request("/api/users")).users);
   }
@@ -55,6 +66,18 @@
       window.location.href = "/login";
     } catch (error) {
       setupError.textContent = error.message;
+    }
+  });
+
+  adminLoginForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    adminLoginError.textContent = "";
+    const values = Object.fromEntries(new FormData(adminLoginForm));
+    try {
+      await request("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(values) });
+      window.location.reload();
+    } catch (error) {
+      adminLoginError.textContent = error.message;
     }
   });
 

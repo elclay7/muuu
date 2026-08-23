@@ -28,7 +28,8 @@ cp -R docs/. /storage/webservices/alimentacion-emma/html/
 docker compose up -d --build
 ```
 
-En la primera visita, abre `/admin` para crear tu cuenta de administrador. Desde
+En la primera visita, abre `/admin` para crear tu cuenta de administrador. En
+visitas posteriores, `/admin` siempre mostrará el acceso para esa cuenta. Desde
 ese panel crea el usuario familiar que utilizarán ambos padres. Los horarios,
 intervalos y credenciales se almacenan en SQLite dentro de `db`. Una vez creado
 el usuario, los intervalos se cambian directamente haciendo click en `cada X h`

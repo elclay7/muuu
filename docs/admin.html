@@ -21,6 +21,16 @@
         <button class="primary-btn" type="submit">Crear administrador</button>
       </form>
     </section>
+    <section id="admin-login-section" hidden>
+      <h2>Acceso administrador</h2>
+      <p class="auth-note">Ingresa con tu cuenta para administrar los usuarios.</p>
+      <form id="admin-login-form" class="auth-form">
+        <label>Usuario<input name="username" autocomplete="username" required></label>
+        <label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label>
+        <p id="admin-login-error" class="form-error" role="alert"></p>
+        <button class="primary-btn" type="submit">Ingresar</button>
+      </form>
+    </section>
     <section id="settings-section" hidden>
       <h2>Usuarios</h2>
       <p class="auth-note">Crea el usuario compartido que utilizarán ambos padres.</p>
