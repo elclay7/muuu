@@ -34,7 +34,8 @@ ese panel crea el usuario familiar que utilizarán ambos padres. Los horarios,
 intervalos y credenciales se almacenan en SQLite dentro de `db`. Una vez creado
 el usuario, los intervalos se cambian directamente haciendo click en `cada X h`
 desde la pantalla principal. `/admin` no aparece como opción de navegación y
-solo acepta sesiones con rol administrador.
+solo acepta sesiones con rol administrador. La tabla de usuarios permite cambiar
+la contraseña de cualquier cuenta.
 
 En Portainer, crea un Stack desde este repositorio (`main`) usando
 `docker-compose.yml`. La ruta del volumen es del host donde corre Docker, no del
@@ -55,7 +56,8 @@ El flujo queda así:
 3. No modifica `/storage/webservices/alimentacion-emma/db`.
 4. Portainer obtiene del repositorio el backend, Nginx y Compose, y reconstruye
 	las imágenes antes del redeploy.
-5. Portainer reconstruye el backend y vuelve a crear los dos contenedores.
+5. El workflow elimina `ws-app` y `ws-db` y Portainer reconstruye y vuelve a
+	crear ambos contenedores, por lo que existe una breve ventana de reinicio.
 
 El workflow está en `.github/workflows/deploy.yml`. Configura estos secretos del
 repositorio: `DEPLOY_HOST`, `DEPLOY_USER`, `SSH_PRIVATE_KEY` y

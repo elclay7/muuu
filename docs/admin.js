@@ -42,10 +42,36 @@
   }
 
   function renderUsers(users) {
-    usersList.innerHTML = users.map((user) => {
-      const role = user.role === "admin" ? "Administrador" : "Familia";
-      return `<div class="user-row"><strong>${user.username}</strong><span>${role}</span></div>`;
-    }).join("");
+    usersList.innerHTML = "";
+    users.forEach((user) => {
+      const row = document.createElement("div");
+      row.className = "user-row";
+      const identity = document.createElement("div");
+      const name = document.createElement("strong");
+      name.textContent = user.username;
+      const role = document.createElement("span");
+      role.textContent = user.role === "admin" ? "Administrador" : "Familia";
+      identity.append(name, role);
+      row.appendChild(identity);
+      const form = document.createElement("form");
+      form.className = "password-form";
+      form.innerHTML = '<input type="password" minlength="8" placeholder="Nueva contraseña" aria-label="Nueva contraseña"><button type="submit">Guardar</button>';
+      const message = document.createElement("small");
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        message.textContent = "";
+        const password = form.querySelector("input").value;
+        try {
+          await request(`/api/users/${user.id}/password`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password }) });
+          form.reset();
+          message.textContent = "Actualizada";
+        } catch (error) {
+          message.textContent = error.message;
+        }
+      });
+      row.append(form, message);
+      usersList.appendChild(row);
+    });
   }
 
   setupForm.addEventListener("submit", async (event) => {

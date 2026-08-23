@@ -219,7 +219,28 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(HTTPStatus.NOT_FOUND, {"error": "Ruta no encontrada"})
 
     def do_PUT(self):
-        if urlparse(self.path).path != "/api/schedules":
+        path = urlparse(self.path).path
+        if path.startswith("/api/users/") and path.endswith("/password"):
+            if not self.require_admin():
+                return
+            try:
+                user_id = int(path.split("/")[3])
+            except (IndexError, ValueError):
+                self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Usuario inválido"})
+                return
+            data = self.read_json() or {}
+            password = data.get("password", "")
+            if not isinstance(password, str) or len(password) < 8:
+                self.send_json(HTTPStatus.BAD_REQUEST, {"error": "La contraseña debe tener al menos 8 caracteres"})
+                return
+            with connection() as db:
+                updated = db.execute("UPDATE users SET password_hash = ? WHERE id = ?", (password_hash(password), user_id)).rowcount
+            if not updated:
+                self.send_json(HTTPStatus.NOT_FOUND, {"error": "Usuario no encontrado"})
+                return
+            self.send_json(HTTPStatus.OK, {"message": "Contraseña actualizada"})
+            return
+        if path != "/api/schedules":
             self.send_json(HTTPStatus.NOT_FOUND, {"error": "Ruta no encontrada"})
             return
         if not self.require_session():

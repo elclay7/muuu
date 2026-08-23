@@ -48,5 +48,8 @@ jobs:
           rsync -az --delete --chmod=F644,D755 -e "ssh -p $SSH_PORT" docs/ \
             "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/html/"
 
+          ssh -p "$SSH_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "docker rm -f ws-app ws-db 2>/dev/null || true"
+
           curl --fail --show-error --silent --retry 3 --retry-delay 5 \
             -X POST "$PORTAINER_WEBHOOK_URL"
