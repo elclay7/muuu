@@ -1,7 +1,6 @@
 (() => {
   const form = document.getElementById("login-form");
   const error = document.getElementById("login-error");
-  const setupLink = document.getElementById("setup-link");
 
   async function status() {
     const response = await fetch("/api/auth/status");
@@ -10,9 +9,8 @@
 
   status().then((data) => {
     if (!data.configured) {
-      setupLink.hidden = false;
       form.hidden = true;
-      error.textContent = "Primero crea el usuario familiar en Administración.";
+      error.textContent = "Primero crea la cuenta administradora en /admin.";
     }
     if (data.authenticated) window.location.href = "/";
   });

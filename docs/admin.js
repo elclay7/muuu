@@ -2,9 +2,10 @@
   const setupSection = document.getElementById("setup-section");
   const settingsSection = document.getElementById("settings-section");
   const setupForm = document.getElementById("setup-form");
-  const settingsForm = document.getElementById("settings-form");
+  const userForm = document.getElementById("user-form");
   const setupError = document.getElementById("setup-error");
-  const settingsMessage = document.getElementById("settings-message");
+  const userMessage = document.getElementById("user-message");
+  const usersList = document.getElementById("users-list");
 
   async function request(url, options) {
     const response = await fetch(url, options);
@@ -20,15 +21,20 @@
       settingsSection.hidden = true;
       return;
     }
-    if (!status.authenticated) {
-      window.location.href = "/login";
+    if (!status.authenticated || status.role !== "admin") {
+      window.location.href = status.authenticated ? "/" : "/login";
       return;
     }
     setupSection.hidden = true;
     settingsSection.hidden = false;
-    const schedules = await request("/api/schedules");
-    settingsForm.elements.tomas.value = schedules.tomas.interval;
-    settingsForm.elements.extracciones.value = schedules.extracciones.interval;
+    renderUsers((await request("/api/users")).users);
+  }
+
+  function renderUsers(users) {
+    usersList.innerHTML = users.map((user) => {
+      const role = user.role === "admin" ? "Administrador" : "Familia";
+      return `<div class="user-row"><strong>${user.username}</strong><span>${role}</span></div>`;
+    }).join("");
   }
 
   setupForm.addEventListener("submit", async (event) => {
@@ -52,22 +58,21 @@
     }
   });
 
-  settingsForm.addEventListener("submit", async (event) => {
+  userForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    settingsMessage.textContent = "";
-    const current = await request("/api/schedules");
-    const values = Object.fromEntries(new FormData(settingsForm));
-    current.tomas.interval = Number(values.tomas);
-    current.extracciones.interval = Number(values.extracciones);
+    userMessage.textContent = "";
+    const values = Object.fromEntries(new FormData(userForm));
     try {
-      await request("/api/schedules", {
-        method: "PUT",
+      await request("/api/users", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(current)
+        body: JSON.stringify({ ...values, role: "family" })
       });
-      settingsMessage.textContent = "Intervalos guardados.";
+      userForm.reset();
+      userMessage.textContent = "Usuario familiar creado.";
+      renderUsers((await request("/api/users")).users);
     } catch (error) {
-      settingsMessage.textContent = error.message;
+      userMessage.textContent = error.message;
     }
   });
 

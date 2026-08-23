@@ -19,7 +19,7 @@
         <p id="today" class="today-date">-</p>
       </div>
       <nav class="header-actions" aria-label="Cuenta">
-        <a href="/admin">Administración</a>
+        <span id="logged-user" class="logged-user"></span>
         <button id="btn-logout" type="button">Salir</button>
       </nav>
     </div>
@@ -32,7 +32,12 @@
         <div class="column-heading">
           <span class="column-icon" aria-hidden="true">🍼</span>
           <h2 id="titulo-bebe">Tomas del Bebé</h2>
-          <span id="interval-tomas" class="interval-pill">cada 3 h</span>
+          <button id="interval-tomas" class="interval-pill" type="button">cada 3 h</button>
+          <div id="interval-edit-tomas" class="interval-edit" hidden>
+            <input class="interval-input" type="number" min="1" max="24" aria-label="Intervalo de tomas en horas">
+            <button class="interval-save" type="button">Guardar</button>
+            <button class="interval-cancel" type="button">Cancelar</button>
+          </div>
         </div>
         <div id="lista-tomas" class="card-list"></div>
       </section>
@@ -41,7 +46,12 @@
         <div class="column-heading">
           <span class="column-icon" aria-hidden="true">🤱</span>
           <h2 id="titulo-mama">Extracciones Mamá</h2>
-          <span id="interval-extracciones" class="interval-pill">cada 2 h</span>
+          <button id="interval-extracciones" class="interval-pill" type="button">cada 2 h</button>
+          <div id="interval-edit-extracciones" class="interval-edit" hidden>
+            <input class="interval-input" type="number" min="1" max="24" aria-label="Intervalo de extracciones en horas">
+            <button class="interval-save" type="button">Guardar</button>
+            <button class="interval-cancel" type="button">Cancelar</button>
+          </div>
         </div>
         <div id="lista-extracciones" class="card-list"></div>
       </section>

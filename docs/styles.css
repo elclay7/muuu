@@ -51,6 +51,11 @@ a {
   font-weight: 600;
 }
 
+.logged-user {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
 .header-actions button,
 .secondary-btn {
   border: 1px solid var(--border-soft);
@@ -152,6 +157,28 @@ a {
   min-height: 20px;
   margin: 0;
   color: #218739;
+}
+
+.users-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.user-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.user-row span {
+  color: var(--text-secondary);
+  font-size: 12px;
 }
 
 .auth-panel > p:last-child {
@@ -265,12 +292,53 @@ input:focus-visible {
 }
 
 .interval-pill {
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
   font-size: 11px;
   font-weight: 600;
   color: var(--text-secondary);
   background: rgba(0, 0, 0, 0.05);
   padding: 4px 10px;
   border-radius: 999px;
+}
+
+.interval-pill:hover {
+  color: var(--accent);
+  background: var(--accent-shadow);
+}
+
+.interval-edit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.interval-input {
+  width: 54px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  padding: 4px 6px;
+  font: inherit;
+  font-size: 12px;
+  text-align: center;
+}
+
+.interval-edit button {
+  border: 0;
+  border-radius: 8px;
+  padding: 5px 8px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+.interval-edit .interval-cancel {
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.06);
 }
 
 .card-list {

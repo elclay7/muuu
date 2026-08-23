@@ -19,9 +19,12 @@ cp -R docs/. /storage/webservices/alimentacion-emma/html/
 docker compose up -d --build
 ```
 
-En la primera visita, abre `/admin` para crear el usuario familiar. Después,
-ambos padres ingresan con las mismas credenciales desde `/login`. Los horarios,
-intervalos y credenciales se almacenan en SQLite dentro de `db`.
+En la primera visita, abre `/admin` para crear tu cuenta de administrador. Desde
+ese panel crea el usuario familiar que utilizarán ambos padres. Los horarios,
+intervalos y credenciales se almacenan en SQLite dentro de `db`. Una vez creado
+el usuario, los intervalos se cambian directamente haciendo click en `cada X h`
+desde la pantalla principal. `/admin` no aparece como opción de navegación y
+solo acepta sesiones con rol administrador.
 
 En Portainer, crea un Stack desde este repositorio (`main`) usando
 `docker-compose.yml`. La ruta del volumen es del host donde corre Docker, no del

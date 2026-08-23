@@ -27,6 +27,33 @@
     });
   }
 
+  function setupIntervalEditor(group) {
+    const pill = document.getElementById(`interval-${group}`);
+    const editor = document.getElementById(`interval-edit-${group}`);
+    const input = editor.querySelector(".interval-input");
+    const close = () => {
+      editor.hidden = true;
+      pill.hidden = false;
+    };
+
+    pill.addEventListener("click", () => {
+      input.value = schedules[group].interval;
+      pill.hidden = true;
+      editor.hidden = false;
+      input.focus();
+      input.select();
+    });
+    editor.querySelector(".interval-cancel").addEventListener("click", close);
+    editor.querySelector(".interval-save").addEventListener("click", async () => {
+      const interval = Number(input.value);
+      if (!Number.isInteger(interval) || interval < 1 || interval > 24) return;
+      schedules[group].interval = interval;
+      await saveSchedules();
+      close();
+      renderAll();
+    });
+  }
+
   /* ---------------------------------------------------------
    * Utilidades de tiempo
    * --------------------------------------------------------- */
@@ -192,6 +219,9 @@
    * --------------------------------------------------------- */
 
   function init() {
+    setupIntervalEditor("tomas");
+    setupIntervalEditor("extracciones");
+
     document.getElementById("btn-reset").addEventListener("click", async () => {
       const confirmed = window.confirm(
         "¿Restablecer todos los horarios a los valores por defecto?"
@@ -225,6 +255,8 @@
       return;
     }
     Object.assign(schedules, await request("/api/schedules"));
+    const account = await request("/api/auth/me");
+    document.getElementById("logged-user").textContent = account.username;
     init();
   });
 })();
