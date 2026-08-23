@@ -3,6 +3,7 @@ name: ws-muuu
 services:
   app:
     build: .
+    container_name: ws-db
     restart: unless-stopped
     volumes:
       - /storage/webservices/alimentacion-emma/db:/data
@@ -18,8 +19,9 @@ services:
       retries: 5
       start_period: 5s
 
-  alimentacion-emma:
+  ws-app:
     image: nginx:alpine
+    container_name: ws-app
     restart: unless-stopped
     depends_on:
       app:

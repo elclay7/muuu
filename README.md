@@ -8,6 +8,9 @@ contenido estático se sirve desde:
 
 `/storage/webservices/alimentacion-emma/html`
 
+Los contenedores se llaman `ws-app` y `ws-db`. La base SQLite no usa un
+contenedor separado: se persiste en `/storage/webservices/alimentacion-emma/db`.
+
 La carpeta `/storage/webservices/alimentacion-emma/db` queda reservada para la
 persistencia futura y no es modificada por este despliegue.
 El compose publica el sitio en el puerto `8083` del servidor.
