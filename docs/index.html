@@ -18,6 +18,7 @@
         <time id="clock" class="clock" aria-live="polite">--:--:--</time>
         <p id="today" class="today-date">-</p>
       </div>
+      <button id="theme-toggle" class="theme-toggle" type="button" title="Cambiar modo de color" aria-label="Cambiar modo de color">☾</button>
       <nav class="header-actions" aria-label="Cuenta">
         <span id="logged-user" class="logged-user"></span>
         <button id="btn-logout" type="button">Salir</button>
@@ -26,6 +27,11 @@
   </header>
 
   <main class="app-main">
+    <div class="day-toolbar">
+      <button id="previous-day" class="day-nav" type="button" title="Día anterior" aria-label="Día anterior">←</button>
+      <time id="selected-date" class="selected-date"></time>
+      <button id="next-day" class="day-nav" type="button" title="Día siguiente" aria-label="Día siguiente">→</button>
+    </div>
     <div class="schedules-grid">
 
       <section class="schedule-column" aria-labelledby="titulo-bebe">
@@ -61,10 +67,21 @@
       </section>
 
     </div>
+    <section class="daily-summary" aria-labelledby="summary-title">
+      <h2 id="summary-title">Resumen diario</h2>
+      <div class="summary-grid">
+        <label>Toma indicada por pediatra<input id="pediatric-ml" type="number" min="10" max="200" step="5" value="80"></label>
+        <div><span>Objetivo diario</span><strong id="daily-goal">640 ml</strong></div>
+        <div><span>Extraído</span><strong id="extracted-total">0 ml</strong></div>
+        <div><span>Faltante</span><strong id="remaining-total">640 ml</strong></div>
+      </div>
+    </section>
   </main>
 
   <footer class="app-footer">
-    <button id="btn-reset" class="reset-btn" type="button">Restablecer horarios por defecto</button>
+    <div class="footer-actions">
+      <button id="btn-reset" class="reset-btn" type="button">Restablecer horarios por defecto</button>
+    </div>
   </footer>
 
   <!-- Plantilla de tarjeta (se clona por JS) -->
@@ -73,6 +90,7 @@
       <div class="card-view">
         <div class="card-label"></div>
         <button class="card-time" type="button"></button>
+          <select class="volume-select" aria-label="Volumen en mililitros"></select>
         <span class="next-tag">• Siguiente</span>
       </div>
       <div class="card-edit">

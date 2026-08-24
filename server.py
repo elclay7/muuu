@@ -5,6 +5,7 @@ import os
 import secrets
 import sqlite3
 import time
+from datetime import date
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
@@ -13,6 +14,7 @@ DB_PATH = os.environ.get("DB_PATH", "/data/app.sqlite3")
 HOST = "0.0.0.0"
 PORT = 3000
 SESSION_TTL = 60 * 60 * 24 * 30
+START_DATE = date(2026, 8, 10)
 DEFAULTS = {
     "tomas": {"interval": 3, "times": ["02:30", "05:30", "08:30", "11:30", "14:30", "17:30", "20:30", "23:30"]},
     "extracciones": {"interval": 2, "times": ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00", "22:00"]},
@@ -46,6 +48,18 @@ def initialize():
                 interval_hours INTEGER NOT NULL,
                 times TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS daily_schedules (
+                schedule_date TEXT NOT NULL,
+                group_name TEXT NOT NULL,
+                interval_hours INTEGER NOT NULL,
+                times TEXT NOT NULL,
+                volumes TEXT NOT NULL,
+                PRIMARY KEY (schedule_date, group_name)
+            );
+            CREATE TABLE IF NOT EXISTS daily_settings (
+                schedule_date TEXT PRIMARY KEY,
+                pediatric_ml INTEGER NOT NULL DEFAULT 80
+            );
         """)
         columns = {row["name"] for row in db.execute("PRAGMA table_info(users)")}
         if "role" not in columns:
@@ -66,6 +80,31 @@ def initialize():
                 "INSERT OR IGNORE INTO schedules (group_name, interval_hours, times) VALUES (?, ?, ?)",
                 (group, config["interval"], json.dumps(config["times"])),
             )
+
+
+def valid_date(value):
+    try:
+        return date.fromisoformat(value) >= START_DATE
+    except (TypeError, ValueError):
+        return False
+
+
+def daily_schedule(db, selected_date, group):
+    row = db.execute("SELECT interval_hours, times, volumes FROM daily_schedules WHERE schedule_date = ? AND group_name = ?", (selected_date, group)).fetchone()
+    if row:
+        return {"interval": row["interval_hours"], "times": json.loads(row["times"]), "volumes": json.loads(row["volumes"])}
+    config = DEFAULTS[group]
+    volumes = [None] * len(config["times"])
+    db.execute("INSERT INTO daily_schedules (schedule_date, group_name, interval_hours, times, volumes) VALUES (?, ?, ?, ?, ?)", (selected_date, group, config["interval"], json.dumps(config["times"]), json.dumps(volumes)))
+    return {"interval": config["interval"], "times": list(config["times"]), "volumes": volumes}
+
+
+def pediatric_ml(db, selected_date):
+    row = db.execute("SELECT pediatric_ml FROM daily_settings WHERE schedule_date = ?", (selected_date,)).fetchone()
+    if row:
+        return row["pediatric_ml"]
+    db.execute("INSERT INTO daily_settings (schedule_date, pediatric_ml) VALUES (?, 80)", (selected_date,))
+    return 80
 
 
 def password_hash(password, salt=None):
@@ -154,7 +193,9 @@ class Handler(BaseHTTPRequestHandler):
         return True
 
     def do_GET(self):
-        path = urlparse(self.path).path
+        parsed = urlparse(self.path)
+        path = parsed.path
+        query = dict(item.split("=", 1) for item in parsed.query.split("&") if "=" in item)
         if path == "/healthz":
             self.send_json(HTTPStatus.OK, {"status": "ok"})
         elif path == "/api/auth/status":
@@ -172,6 +213,18 @@ class Handler(BaseHTTPRequestHandler):
             with connection() as db:
                 rows = db.execute("SELECT group_name, interval_hours, times FROM schedules").fetchall()
             self.send_json(HTTPStatus.OK, {row["group_name"]: {"interval": row["interval_hours"], "times": json.loads(row["times"])} for row in rows})
+        elif path == "/api/day":
+            if not self.require_session():
+                return
+            selected_date = query.get("date", "")
+            if not valid_date(selected_date):
+                self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Fecha inválida"})
+                return
+            with connection() as db:
+                result = {group: daily_schedule(db, selected_date, group) for group in DEFAULTS}
+                result["date"] = selected_date
+                result["pediatric_ml"] = pediatric_ml(db, selected_date)
+            self.send_json(HTTPStatus.OK, result)
         elif path == "/api/users":
             if not self.require_admin():
                 return
@@ -211,6 +264,19 @@ class Handler(BaseHTTPRequestHandler):
                 for group, config in DEFAULTS.items():
                     db.execute("UPDATE schedules SET interval_hours = ?, times = ? WHERE group_name = ?", (config["interval"], json.dumps(config["times"]), group))
             self.send_json(HTTPStatus.OK, {"message": "Horarios restablecidos"})
+        elif path == "/api/day/reset":
+            if not self.require_session():
+                return
+            query = dict(item.split("=", 1) for item in urlparse(self.path).query.split("&") if "=" in item)
+            selected_date = query.get("date", "")
+            if not valid_date(selected_date):
+                self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Fecha inválida"})
+                return
+            with connection() as db:
+                for group, config in DEFAULTS.items():
+                    db.execute("DELETE FROM daily_schedules WHERE schedule_date = ? AND group_name = ?", (selected_date, group))
+                db.execute("DELETE FROM daily_settings WHERE schedule_date = ?", (selected_date,))
+            self.send_json(HTTPStatus.OK, {"message": "Día restablecido"})
         elif path == "/api/users":
             if not self.require_admin():
                 return
@@ -220,6 +286,28 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         path = urlparse(self.path).path
+        if path == "/api/day":
+            if not self.require_session():
+                return
+            data = self.read_json() or {}
+            selected_date = data.get("date")
+            pediatric = data.get("pediatric_ml")
+            if not valid_date(selected_date) or not isinstance(pediatric, int) or pediatric < 10 or pediatric > 200 or pediatric % 5:
+                self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Registro diario inválido"})
+                return
+            with connection() as db:
+                for group in DEFAULTS:
+                    item = data.get(group, {})
+                    interval = item.get("interval")
+                    times = item.get("times")
+                    volumes = item.get("volumes")
+                    if not isinstance(interval, int) or not 1 <= interval <= 24 or not valid_schedule(times) or not isinstance(volumes, list) or len(volumes) != 8 or any(volume is not None and (not isinstance(volume, int) or volume < 10 or volume > 200 or volume % 5) for volume in volumes):
+                        self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Registro diario inválido"})
+                        return
+                    db.execute("INSERT INTO daily_schedules (schedule_date, group_name, interval_hours, times, volumes) VALUES (?, ?, ?, ?, ?) ON CONFLICT(schedule_date, group_name) DO UPDATE SET interval_hours = excluded.interval_hours, times = excluded.times, volumes = excluded.volumes", (selected_date, group, interval, json.dumps(times), json.dumps(volumes)))
+                db.execute("INSERT INTO daily_settings (schedule_date, pediatric_ml) VALUES (?, ?) ON CONFLICT(schedule_date) DO UPDATE SET pediatric_ml = excluded.pediatric_ml", (selected_date, pediatric))
+            self.send_json(HTTPStatus.OK, data)
+            return
         if path.startswith("/api/users/") and path.endswith("/password"):
             if not self.require_admin():
                 return

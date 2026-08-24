@@ -4,6 +4,13 @@
   const TIMEZONE = "America/Santiago";
 
   const schedules = {};
+  function currentDateInSantiago() {
+    const parts = new Intl.DateTimeFormat("en-US", { timeZone: TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+    const values = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+    return `${values.year}-${values.month}-${values.day}`;
+  }
+
+  let selectedDate = currentDateInSantiago();
 
   // Índice de la tarjeta actualmente en edición (evita mezclar dos ediciones a la vez)
   let editing = null; // { group, index } | null
@@ -20,11 +27,22 @@
   }
 
   async function saveSchedules() {
-    await request("/api/schedules", {
+    await request("/api/day", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(schedules)
+      body: JSON.stringify({ ...schedules, date: selectedDate, pediatric_ml: Number(document.getElementById("pediatric-ml").value) })
     });
+  }
+
+  async function loadDay() {
+    Object.assign(schedules, await request(`/api/day?date=${selectedDate}`));
+    document.getElementById("pediatric-ml").value = schedules.pediatric_ml;
+    const displayDate = new Intl.DateTimeFormat("es-CL", { timeZone: TIMEZONE, day: "numeric", month: "long", year: "numeric" }).format(new Date(`${selectedDate}T12:00:00`));
+    document.getElementById("selected-date").textContent = displayDate;
+    document.getElementById("previous-day").disabled = selectedDate === "2026-08-10";
+    document.getElementById("next-day").disabled = selectedDate === currentDateInSantiago();
+    renderAll();
+    updateSummary();
   }
 
   function setupIntervalEditor(group) {
@@ -141,6 +159,18 @@
       node.querySelector(".card-label").textContent = `${group === "tomas" ? "Toma" : "Extracción"} ${index + 1}`;
       node.querySelector(".card-time").textContent = timeStr;
 
+      const volume = node.querySelector(".volume-select");
+      volume.innerHTML = '<option value="">ml</option>';
+      for (let milliliters = 10; milliliters <= 200; milliliters += 5) {
+        volume.insertAdjacentHTML("beforeend", `<option value="${milliliters}">${milliliters} ml</option>`);
+      }
+      volume.value = cfg.volumes[index] || "";
+      volume.addEventListener("change", async () => {
+        cfg.volumes[index] = volume.value ? Number(volume.value) : null;
+        await saveSchedules();
+        updateSummary();
+      });
+
       const isEditingThis = editing && editing.group === group && editing.index === index;
       node.classList.toggle("editing", !!isEditingThis);
 
@@ -188,6 +218,41 @@
     renderGroup("extracciones");
   }
 
+  function updateSummary() {
+    const pediatric = Number(document.getElementById("pediatric-ml").value) || 0;
+    const extracted = (schedules.extracciones?.volumes || []).reduce((total, value) => total + (value || 0), 0);
+    document.getElementById("daily-goal").textContent = `${pediatric * 8} ml`;
+    document.getElementById("extracted-total").textContent = `${extracted} ml`;
+    document.getElementById("remaining-total").textContent = `${Math.max(0, pediatric * 8 - extracted)} ml`;
+  }
+
+  function setupDayNavigation() {
+    document.getElementById("previous-day").addEventListener("click", async () => {
+      const current = new Date(`${selectedDate}T12:00:00`);
+      current.setDate(current.getDate() - 1);
+      selectedDate = current.toISOString().slice(0, 10);
+      await loadDay();
+    });
+    document.getElementById("next-day").addEventListener("click", async () => {
+      const current = new Date(`${selectedDate}T12:00:00`);
+      current.setDate(current.getDate() + 1);
+      selectedDate = current.toISOString().slice(0, 10);
+      await loadDay();
+    });
+  }
+
+  function setupTheme() {
+    const button = document.getElementById("theme-toggle");
+    const dark = localStorage.getItem("dark-mode") === "true";
+    document.body.classList.toggle("dark-mode", dark);
+    button.textContent = dark ? "☀" : "☾";
+    button.addEventListener("click", () => {
+      const enabled = document.body.classList.toggle("dark-mode");
+      localStorage.setItem("dark-mode", String(enabled));
+      button.textContent = enabled ? "☀" : "☾";
+    });
+  }
+
   /* ---------------------------------------------------------
    * Reloj y fecha (America/Santiago)
    * --------------------------------------------------------- */
@@ -221,15 +286,20 @@
   function init() {
     setupIntervalEditor("tomas");
     setupIntervalEditor("extracciones");
+    setupDayNavigation();
+    setupTheme();
+    document.getElementById("pediatric-ml").addEventListener("change", async () => {
+      await saveSchedules();
+      updateSummary();
+    });
 
     document.getElementById("btn-reset").addEventListener("click", async () => {
       const confirmed = window.confirm(
         "¿Restablecer todos los horarios a los valores por defecto?"
       );
       if (confirmed) {
-        await request("/api/schedules/reset", { method: "POST" });
-        Object.assign(schedules, await request("/api/schedules"));
-        renderAll();
+        await request(`/api/day/reset?date=${selectedDate}`, { method: "POST" });
+        await loadDay();
       }
     });
 
@@ -254,7 +324,7 @@
       window.location.href = status.configured ? "/login" : "/admin";
       return;
     }
-    Object.assign(schedules, await request("/api/schedules"));
+    await loadDay();
     const account = await request("/api/auth/me");
     document.getElementById("logged-user").textContent = account.username;
     init();

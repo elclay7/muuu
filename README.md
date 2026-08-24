@@ -38,6 +38,13 @@ solo acepta sesiones con rol administrador. La tabla de usuarios permite cambiar
 la contraseña de cualquier cuenta y eliminar usuarios. La cuenta administradora
 activa no puede eliminarse y siempre debe existir al menos un administrador.
 
+La pantalla principal muestra el día actual al iniciar. El registro permite
+navegar desde el `10 de agosto de 2026` hasta el día actual y guarda cada día de
+forma independiente. Cada toma y extracción tiene un volumen opcional entre
+`10` y `200 ml`, en pasos de `5 ml`. El resumen diario calcula el objetivo como
+la toma indicada por el pediatra multiplicada por `8`, suma las extracciones y
+muestra lo faltante.
+
 En Portainer, crea un Stack desde este repositorio (`main`) usando
 `docker-compose.yml`. La ruta del volumen es del host donde corre Docker, no del
 equipo desde el que abras Portainer.
