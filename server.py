@@ -225,6 +225,30 @@ class Handler(BaseHTTPRequestHandler):
                 result["date"] = selected_date
                 result["pediatric_ml"] = pediatric_ml(db, selected_date)
             self.send_json(HTTPStatus.OK, result)
+        elif path == "/api/extractions-summary":
+            if not self.require_session():
+                return
+            start_date = query.get("from")
+            end_date = query.get("to")
+            if (start_date and not valid_date(start_date)) or (end_date and not valid_date(end_date)) or (start_date and end_date and start_date > end_date):
+                self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Rango de fechas inválido"})
+                return
+            conditions = ["group_name = 'extracciones'", "json_each.value IS NOT NULL"]
+            params = []
+            if start_date:
+                conditions.append("schedule_date >= ?")
+                params.append(start_date)
+            if end_date:
+                conditions.append("schedule_date <= ?")
+                params.append(end_date)
+            with connection() as db:
+                rows = db.execute(
+                    f"SELECT schedule_date, SUM(CAST(json_each.value AS INTEGER)) AS total_ml "
+                    f"FROM daily_schedules, json_each(daily_schedules.volumes) "
+                    f"WHERE {' AND '.join(conditions)} GROUP BY schedule_date ORDER BY schedule_date",
+                    params,
+                ).fetchall()
+            self.send_json(HTTPStatus.OK, {"data": [{"date": row["schedule_date"], "ml": row["total_ml"]} for row in rows]})
         elif path == "/api/users":
             if not self.require_admin():
                 return

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estadísticas de extracciones</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="back-link" href="/" title="Volver al registro" aria-label="Volver al registro">←</a>
+        <span class="brand-dot"></span>
+        <h1>Estadísticas</h1>
+      </div>
+      <button id="theme-toggle" class="theme-toggle" type="button" title="Cambiar modo de color" aria-label="Cambiar modo de color">☾</button>
+    </div>
+  </header>
+
+  <main class="stats-main">
+    <div class="stats-heading">
+      <div>
+        <p class="eyebrow">Extracciones mamá</p>
+        <h2>Mililitros extraídos</h2>
+      </div>
+      <div class="stats-total"><strong id="total-ml">0 ml</strong><span id="days-count">Sin datos</span></div>
+    </div>
+
+    <section class="date-filter" aria-label="Filtrar por rango de fechas">
+      <label>Desde<input id="date-from" type="date"></label>
+      <label>Hasta<input id="date-to" type="date"></label>
+      <button id="clear-filter" class="secondary-btn" type="button">Mostrar todo</button>
+    </section>
+
+    <section class="chart-panel" aria-labelledby="chart-title">
+      <h3 id="chart-title">Resumen diario</h3>
+      <p id="chart-status" class="chart-status" role="status">Cargando datos...</p>
+      <div class="chart-wrap">
+        <svg id="chart" role="img" aria-labelledby="chart-title chart-description" viewBox="0 0 900 360" preserveAspectRatio="none"></svg>
+      </div>
+      <p id="chart-description" class="sr-only"></p>
+    </section>
+  </main>
+
+  <script src="stats.js"></script>
+</body>
+</html>
