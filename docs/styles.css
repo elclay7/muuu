@@ -7,6 +7,7 @@
   --accent: #0071e3;
   --accent-shadow: rgba(0, 113, 227, 0.18);
   --border-soft: rgba(0, 0, 0, 0.06);
+  --header-bg: rgba(245, 245, 247, 0.78);
   --radius: 18px;
   --font-main: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
 }
@@ -18,6 +19,7 @@ body.dark-mode {
   --text-primary: #f2f4f7;
   --text-secondary: #aab1bb;
   --border-soft: rgba(255, 255, 255, 0.12);
+  --header-bg: rgba(28, 28, 30, 0.86);
   --accent-shadow: rgba(77, 166, 255, 0.22);
   background:
     radial-gradient(circle at 15% 0%, rgba(77, 166, 255, 0.1), transparent 45%),
@@ -299,7 +301,7 @@ input:focus-visible {
   z-index: 10;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  background: rgba(245, 245, 247, 0.78);
+  background: var(--header-bg);
   border-bottom: 1px solid var(--border-soft);
 }
 
