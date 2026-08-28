@@ -19,6 +19,10 @@ DEFAULTS = {
     "tomas": {"interval": 3, "times": ["02:30", "05:30", "08:30", "11:30", "14:30", "17:30", "20:30", "23:30"]},
     "extracciones": {"interval": 2, "times": ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00", "22:00"]},
 }
+RECORD_LIMIT = 50
+TOMA_TYPES = {"toma", "relleno"}
+FEED_CONTENTS = {"formula", "leche materna"}
+EXTRACTION_TYPE = "extracción"
 sessions = {}
 
 
@@ -75,6 +79,10 @@ def initialize():
             """)
             db.execute("INSERT INTO users (id, username, password_hash, role, created_at) SELECT id, username, password_hash, 'family', created_at FROM users_legacy")
             db.execute("DROP TABLE users_legacy")
+        columns = {row["name"] for row in db.execute("PRAGMA table_info(daily_schedules)")}
+        if "records" not in columns:
+            db.execute("ALTER TABLE daily_schedules ADD COLUMN records TEXT")
+        migrate_daily_records(db)
         for group, config in DEFAULTS.items():
             db.execute(
                 "INSERT OR IGNORE INTO schedules (group_name, interval_hours, times) VALUES (?, ?, ?)",
@@ -89,14 +97,56 @@ def valid_date(value):
         return False
 
 
-def daily_schedule(db, selected_date, group):
-    row = db.execute("SELECT interval_hours, times, volumes FROM daily_schedules WHERE schedule_date = ? AND group_name = ?", (selected_date, group)).fetchone()
-    if row:
-        return {"interval": row["interval_hours"], "times": json.loads(row["times"]), "volumes": json.loads(row["volumes"])}
+def default_daily_records(group):
+    if group == "tomas":
+        return [{"time": "00:00", "type": "toma", "content": "formula", "volume": None}]
+    return [{"time": "00:00", "type": EXTRACTION_TYPE, "volume": None}]
+
+
+def migrate_daily_records(db):
+    for row in db.execute("SELECT schedule_date, group_name, times, volumes FROM daily_schedules WHERE records IS NULL").fetchall():
+        times = json.loads(row["times"])
+        volumes = json.loads(row["volumes"])
+        records = []
+        for time, volume in zip(times, volumes):
+            if row["group_name"] == "tomas":
+                records.append({"time": time, "type": "toma", "content": "formula", "volume": volume})
+            else:
+                records.append({"time": time, "type": EXTRACTION_TYPE, "volume": volume})
+        db.execute(
+            "UPDATE daily_schedules SET records = ? WHERE schedule_date = ? AND group_name = ?",
+            (json.dumps(records), row["schedule_date"], row["group_name"]),
+        )
+
+
+def daily_records(db, selected_date, group):
+    row = db.execute("SELECT records FROM daily_schedules WHERE schedule_date = ? AND group_name = ?", (selected_date, group)).fetchone()
+    if row and row["records"]:
+        return {"records": json.loads(row["records"])}
+    records = default_daily_records(group)
     config = DEFAULTS[group]
-    volumes = [None] * len(config["times"])
-    db.execute("INSERT INTO daily_schedules (schedule_date, group_name, interval_hours, times, volumes) VALUES (?, ?, ?, ?, ?)", (selected_date, group, config["interval"], json.dumps(config["times"]), json.dumps(volumes)))
-    return {"interval": config["interval"], "times": list(config["times"]), "volumes": volumes}
+    db.execute(
+        "INSERT INTO daily_schedules (schedule_date, group_name, interval_hours, times, volumes, records) VALUES (?, ?, ?, ?, ?, ?)",
+        (selected_date, group, config["interval"], json.dumps(config["times"]), json.dumps([None] * len(config["times"])), json.dumps(records)),
+    )
+    return {"records": records}
+
+
+def _time_to_minutes(value):
+    hour, minute = (int(part) for part in value.split(":"))
+    return hour * 60 + minute
+
+
+def _average_interval_hours(records, group):
+    if group == "tomas":
+        relevant = [r for r in records if r.get("type") != "relleno"]
+    else:
+        relevant = records
+    if len(relevant) < 2:
+        return DEFAULTS[group]["interval"]
+    minutes = sorted(_time_to_minutes(r["time"]) for r in relevant)
+    gaps = [minutes[i] - minutes[i - 1] for i in range(1, len(minutes))]
+    return max(1, round(sum(gaps) / len(gaps) / 60))
 
 
 def pediatric_ml(db, selected_date):
@@ -141,6 +191,27 @@ def valid_time(value):
 
 def valid_schedule(value):
     return isinstance(value, list) and len(value) == 8 and all(valid_time(item) for item in value)
+
+
+def valid_volume(value):
+    return value is None or (isinstance(value, int) and 10 <= value <= 240 and value % 5 == 0)
+
+
+def valid_records(records, group):
+    if not isinstance(records, list) or not 1 <= len(records) <= RECORD_LIMIT:
+        return False
+    for record in records:
+        if not isinstance(record, dict) or not valid_time(record.get("time")):
+            return False
+        volume = record.get("volume")
+        if not valid_volume(volume):
+            return False
+        if group == "tomas":
+            if record.get("type") not in TOMA_TYPES or record.get("content") not in FEED_CONTENTS:
+                return False
+        elif record.get("type") != EXTRACTION_TYPE:
+            return False
+    return True
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -221,7 +292,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Fecha inválida"})
                 return
             with connection() as db:
-                result = {group: daily_schedule(db, selected_date, group) for group in DEFAULTS}
+                result = {group: daily_records(db, selected_date, group) for group in DEFAULTS}
                 result["date"] = selected_date
                 result["pediatric_ml"] = pediatric_ml(db, selected_date)
             self.send_json(HTTPStatus.OK, result)
@@ -233,7 +304,7 @@ class Handler(BaseHTTPRequestHandler):
             if (start_date and not valid_date(start_date)) or (end_date and not valid_date(end_date)) or (start_date and end_date and start_date > end_date):
                 self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Rango de fechas inválido"})
                 return
-            conditions = ["group_name = 'extracciones'", "json_each.value IS NOT NULL"]
+            conditions = ["group_name = 'extracciones'", "records IS NOT NULL"]
             params = []
             if start_date:
                 conditions.append("schedule_date >= ?")
@@ -243,12 +314,16 @@ class Handler(BaseHTTPRequestHandler):
                 params.append(end_date)
             with connection() as db:
                 rows = db.execute(
-                    f"SELECT schedule_date, SUM(CAST(json_each.value AS INTEGER)) AS total_ml "
-                    f"FROM daily_schedules, json_each(daily_schedules.volumes) "
-                    f"WHERE {' AND '.join(conditions)} GROUP BY schedule_date ORDER BY schedule_date",
+                    f"SELECT schedule_date, records FROM daily_schedules WHERE {' AND '.join(conditions)} ORDER BY schedule_date",
                     params,
                 ).fetchall()
-            self.send_json(HTTPStatus.OK, {"data": [{"date": row["schedule_date"], "ml": row["total_ml"]} for row in rows]})
+            result = []
+            for row in rows:
+                records = json.loads(row["records"])
+                total = sum(r.get("volume") or 0 for r in records)
+                if total:
+                    result.append({"date": row["schedule_date"], "ml": total})
+            self.send_json(HTTPStatus.OK, {"data": result})
         elif path == "/api/users":
             if not self.require_admin():
                 return
@@ -297,10 +372,10 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Fecha inválida"})
                 return
             with connection() as db:
-                for group, config in DEFAULTS.items():
+                for group in DEFAULTS:
                     db.execute("DELETE FROM daily_schedules WHERE schedule_date = ? AND group_name = ?", (selected_date, group))
                 db.execute("DELETE FROM daily_settings WHERE schedule_date = ?", (selected_date,))
-            self.send_json(HTTPStatus.OK, {"message": "Día restablecido"})
+            self.send_json(HTTPStatus.OK, {"message": "Registros del día borrados"})
         elif path == "/api/users":
             if not self.require_admin():
                 return
@@ -322,13 +397,18 @@ class Handler(BaseHTTPRequestHandler):
             with connection() as db:
                 for group in DEFAULTS:
                     item = data.get(group, {})
-                    interval = item.get("interval")
-                    times = item.get("times")
-                    volumes = item.get("volumes")
-                    if not isinstance(interval, int) or not 1 <= interval <= 24 or not valid_schedule(times) or not isinstance(volumes, list) or len(volumes) != 8 or any(volume is not None and (not isinstance(volume, int) or volume < 10 or volume > 200 or volume % 5) for volume in volumes):
+                    records = item.get("records")
+                    if not valid_records(records, group):
                         self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Registro diario inválido"})
                         return
-                    db.execute("INSERT INTO daily_schedules (schedule_date, group_name, interval_hours, times, volumes) VALUES (?, ?, ?, ?, ?) ON CONFLICT(schedule_date, group_name) DO UPDATE SET interval_hours = excluded.interval_hours, times = excluded.times, volumes = excluded.volumes", (selected_date, group, interval, json.dumps(times), json.dumps(volumes)))
+                    times = [r["time"] for r in records]
+                    volumes = [r.get("volume") for r in records]
+                    interval = _average_interval_hours(records, group)
+                    db.execute(
+                        "INSERT INTO daily_schedules (schedule_date, group_name, interval_hours, times, volumes, records) VALUES (?, ?, ?, ?, ?, ?) "
+                        "ON CONFLICT(schedule_date, group_name) DO UPDATE SET interval_hours = excluded.interval_hours, times = excluded.times, volumes = excluded.volumes, records = excluded.records",
+                        (selected_date, group, interval, json.dumps(times), json.dumps(volumes), json.dumps(records)),
+                    )
                 db.execute("INSERT INTO daily_settings (schedule_date, pediatric_ml) VALUES (?, ?) ON CONFLICT(schedule_date) DO UPDATE SET pediatric_ml = excluded.pediatric_ml", (selected_date, pediatric))
             self.send_json(HTTPStatus.OK, data)
             return

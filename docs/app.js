@@ -2,6 +2,7 @@
   "use strict";
 
   const TIMEZONE = "America/Santiago";
+  const MAX_RECORDS = 50;
 
   const schedules = {};
   function currentDateInSantiago() {
@@ -11,9 +12,6 @@
   }
 
   let selectedDate = currentDateInSantiago();
-
-  // Índice de la tarjeta actualmente en edición (evita mezclar dos ediciones a la vez)
-  let editing = null; // { group, index } | null
 
   async function request(url, options) {
     const response = await fetch(url, options);
@@ -45,35 +43,8 @@
     updateSummary();
   }
 
-  function setupIntervalEditor(group) {
-    const pill = document.getElementById(`interval-${group}`);
-    const editor = document.getElementById(`interval-edit-${group}`);
-    const input = editor.querySelector(".interval-input");
-    const close = () => {
-      editor.hidden = true;
-      pill.hidden = false;
-    };
-
-    pill.addEventListener("click", () => {
-      input.value = schedules[group].interval;
-      pill.hidden = true;
-      editor.hidden = false;
-      input.focus();
-      input.select();
-    });
-    editor.querySelector(".interval-cancel").addEventListener("click", close);
-    editor.querySelector(".interval-save").addEventListener("click", async () => {
-      const interval = Number(input.value);
-      if (!Number.isInteger(interval) || interval < 1 || interval > 24) return;
-      schedules[group].interval = interval;
-      await saveSchedules();
-      close();
-      renderAll();
-    });
-  }
-
   /* ---------------------------------------------------------
-   * Utilidades de tiempo
+   * Utilidades de tiempo y registros
    * --------------------------------------------------------- */
 
   function timeToMinutes(hhmm) {
@@ -81,50 +52,49 @@
     return h * 60 + m;
   }
 
-  function minutesToTime(mins) {
-    const wrapped = ((mins % 1440) + 1440) % 1440;
-    const h = Math.floor(wrapped / 60);
-    const m = wrapped % 60;
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-  }
-
-  function nowInSantiagoMinutes() {
-    const parts = new Intl.DateTimeFormat("es-CL", {
-      timeZone: TIMEZONE,
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false
-    }).formatToParts(new Date());
-    const h = Number(parts.find((p) => p.type === "hour").value);
-    const m = Number(parts.find((p) => p.type === "minute").value);
-    return h * 60 + m;
-  }
-
-  function findNextIndex(arr, nowMinutes) {
-    for (let i = 0; i < arr.length; i++) {
-      if (timeToMinutes(arr[i]) > nowMinutes) {
-        return i;
-      }
+  function averageIntervalLabel(group) {
+    const records = schedules[group]?.records || [];
+    const relevant = group === "tomas"
+      ? records.filter((r) => r.type !== "relleno")
+      : records.slice();
+    if (relevant.length < 2) return "cada — h";
+    const minutes = relevant.map((r) => timeToMinutes(r.time)).sort((a, b) => a - b);
+    const gaps = [];
+    for (let i = 1; i < minutes.length; i++) {
+      gaps.push(minutes[i] - minutes[i - 1]);
     }
-    return 0; // la hora actual superó el último evento: el siguiente es el primero del día
+    const avgMinutes = gaps.reduce((sum, value) => sum + value, 0) / gaps.length;
+    const hours = (avgMinutes / 60).toFixed(1).replace(".0", "");
+    return `cada ${hours} h`;
   }
 
-  /* ---------------------------------------------------------
-   * Edición: cascada e individual
-   * --------------------------------------------------------- */
+  function defaultRecord(group) {
+    if (group === "tomas") {
+      return { time: "00:00", type: "toma", content: "formula", volume: null };
+    }
+    return { time: "00:00", type: "extracción", volume: null };
+  }
 
-  function applyCascade(group, anchorIndex, newTimeStr) {
-    const cfg = schedules[group];
-    const anchorMinutes = timeToMinutes(newTimeStr);
-    const result = cfg.times.map((_, i) => {
-      const offset = (i - anchorIndex) * cfg.interval * 60;
-      return minutesToTime(anchorMinutes + offset);
+  function addRecord(group) {
+    const records = schedules[group].records;
+    if (records.length >= MAX_RECORDS) return;
+    records.push(defaultRecord(group));
+    renderAll();
+    updateSummary();
+    saveSchedules().catch((error) => {
+      window.alert(error.message);
     });
-    cfg.times = result;
   }
 
-  function applyIndividual(group, index, newTimeStr) {
-    schedules[group].times[index] = newTimeStr;
+  function deleteRecord(group, index) {
+    const records = schedules[group].records;
+    if (records.length <= 1) return;
+    records.splice(index, 1);
+    renderAll();
+    updateSummary();
+    saveSchedules().catch((error) => {
+      window.alert(error.message);
+    });
   }
 
   /* ---------------------------------------------------------
@@ -134,80 +104,63 @@
   const template = document.getElementById("tpl-card");
 
   function renderGroup(group) {
-    const cfg = schedules[group];
+    const records = schedules[group].records;
     const container = document.getElementById(`lista-${group}`);
-    const arr = cfg.times;
-    const nowMinutes = nowInSantiagoMinutes();
-    const nextIndex = findNextIndex(arr, nowMinutes);
-    document.getElementById(`interval-${group}`).textContent = `cada ${cfg.interval} h`;
-
+    document.getElementById(`interval-${group}`).textContent = averageIntervalLabel(group);
     container.innerHTML = "";
 
-    arr.forEach((timeStr, index) => {
+    records.forEach((record, index) => {
       const node = template.content.firstElementChild.cloneNode(true);
-      const isNext = index === nextIndex;
-      // Un evento se considera "pasado" si ya ocurrió hoy y no es el próximo
-      // (si el siguiente es el índice 0, todos los demás ya pasaron hoy).
-      const pastEvent = !isNext && (nextIndex === 0 || timeToMinutes(timeStr) < nowMinutes);
 
-      node.classList.toggle("next-event", isNext);
-      node.classList.toggle("past-event", pastEvent);
+      const timeInput = node.querySelector(".time-input");
+      timeInput.value = record.time;
+      timeInput.addEventListener("change", () => {
+        record.time = timeInput.value || "00:00";
+        document.getElementById(`interval-${group}`).textContent = averageIntervalLabel(group);
+        saveSchedules().catch((error) => window.alert(error.message));
+      });
 
-      node.dataset.group = group;
-      node.dataset.index = String(index);
-
-      node.querySelector(".card-label").textContent = `${group === "tomas" ? "Toma" : "Extracción"} ${index + 1}`;
-      node.querySelector(".card-time").textContent = timeStr;
-
-      const volume = node.querySelector(".volume-select");
-      volume.innerHTML = '<option value="">ml</option>';
-      for (let milliliters = 10; milliliters <= 200; milliliters += 5) {
-        volume.insertAdjacentHTML("beforeend", `<option value="${milliliters}">${milliliters} ml</option>`);
+      const typeSelect = node.querySelector(".type-select");
+      if (group === "tomas") {
+        typeSelect.innerHTML = '<option value="toma">Toma</option><option value="relleno">Relleno</option>';
+        typeSelect.value = record.type;
+        typeSelect.addEventListener("change", () => {
+          record.type = typeSelect.value;
+          document.getElementById(`interval-${group}`).textContent = averageIntervalLabel(group);
+          saveSchedules().catch((error) => window.alert(error.message));
+        });
+      } else {
+        typeSelect.hidden = true;
       }
-      volume.value = cfg.volumes[index] || "";
-      volume.addEventListener("change", async () => {
-        cfg.volumes[index] = volume.value ? Number(volume.value) : null;
-        await saveSchedules();
-        updateSummary();
+
+      const contentSelect = node.querySelector(".content-select");
+      if (group === "tomas") {
+        contentSelect.innerHTML = '<option value="formula">Fórmula</option><option value="leche materna">Leche materna</option>';
+        contentSelect.value = record.content;
+        contentSelect.addEventListener("change", () => {
+          record.content = contentSelect.value;
+          saveSchedules().catch((error) => window.alert(error.message));
+        });
+      } else {
+        contentSelect.hidden = true;
+      }
+
+      const volumeSelect = node.querySelector(".volume-select");
+      volumeSelect.innerHTML = '<option value="">ml</option>';
+      for (let milliliters = 10; milliliters <= 240; milliliters += 5) {
+        volumeSelect.insertAdjacentHTML("beforeend", `<option value="${milliliters}">${milliliters} ml</option>`);
+      }
+      volumeSelect.value = record.volume || "";
+      volumeSelect.addEventListener("change", () => {
+        record.volume = volumeSelect.value ? Number(volumeSelect.value) : null;
+        saveSchedules().then(updateSummary).catch((error) => window.alert(error.message));
       });
 
-      const isEditingThis = editing && editing.group === group && editing.index === index;
-      node.classList.toggle("editing", !!isEditingThis);
-
-      const input = node.querySelector(".time-input");
-      input.value = timeStr;
-
-      // Abrir edición
-      node.querySelector(".card-time").addEventListener("click", () => {
-        editing = { group, index };
-        renderAll();
-        const el = document.querySelector(
-          `.event-card[data-group="${group}"][data-index="${index}"] .time-input`
-        );
-        if (el) el.focus();
-      });
-
-      // Cancelar edición
-      node.querySelector(".edit-cancel").addEventListener("click", () => {
-        editing = null;
-        renderAll();
-      });
-
-      // Guardar en cascada
-      node.querySelector(".edit-cascade").addEventListener("click", () => {
-        const val = input.value || timeStr;
-        applyCascade(group, index, val);
-        editing = null;
-        saveSchedules().then(renderAll);
-      });
-
-      // Guardar individual
-      node.querySelector(".edit-single").addEventListener("click", () => {
-        const val = input.value || timeStr;
-        applyIndividual(group, index, val);
-        editing = null;
-        saveSchedules().then(renderAll);
-      });
+      const deleteButton = node.querySelector(".delete-record");
+      deleteButton.addEventListener("click", () => deleteRecord(group, index));
+      if (records.length <= 1) {
+        deleteButton.disabled = true;
+      }
 
       container.appendChild(node);
     });
@@ -216,14 +169,19 @@
   function renderAll() {
     renderGroup("tomas");
     renderGroup("extracciones");
+    document.getElementById("add-toma").disabled = schedules.tomas.records.length >= MAX_RECORDS;
+    document.getElementById("add-extraccion").disabled = schedules.extracciones.records.length >= MAX_RECORDS;
   }
 
   function updateSummary() {
     const pediatric = Number(document.getElementById("pediatric-ml").value) || 0;
-    const extracted = (schedules.extracciones?.volumes || []).reduce((total, value) => total + (value || 0), 0);
-    document.getElementById("daily-goal").textContent = `${pediatric * 8} ml`;
+    const feedRecords = schedules.tomas?.records || [];
+    const tomaCount = feedRecords.filter((r) => r.type === "toma").length;
+    const extracted = (schedules.extracciones?.records || []).reduce((total, r) => total + (r.volume || 0), 0);
+    const goal = pediatric * tomaCount;
+    document.getElementById("daily-goal").textContent = `${goal} ml`;
     document.getElementById("extracted-total").textContent = `${extracted} ml`;
-    document.getElementById("remaining-total").textContent = `${Math.max(0, pediatric * 8 - extracted)} ml`;
+    document.getElementById("remaining-total").textContent = `${Math.max(0, goal - extracted)} ml`;
   }
 
   function setupDayNavigation() {
@@ -284,8 +242,6 @@
    * --------------------------------------------------------- */
 
   function init() {
-    setupIntervalEditor("tomas");
-    setupIntervalEditor("extracciones");
     setupDayNavigation();
     setupTheme();
     document.getElementById("pediatric-ml").addEventListener("change", async () => {
@@ -293,10 +249,11 @@
       updateSummary();
     });
 
+    document.getElementById("add-toma").addEventListener("click", () => addRecord("tomas"));
+    document.getElementById("add-extraccion").addEventListener("click", () => addRecord("extracciones"));
+
     document.getElementById("btn-reset").addEventListener("click", async () => {
-      const confirmed = window.confirm(
-        "¿Restablecer todos los horarios a los valores por defecto?"
-      );
+      const confirmed = window.confirm("¿Borrar todos los registros del día y dejar solo el de las 00:00?");
       if (confirmed) {
         await request(`/api/day/reset?date=${selectedDate}`, { method: "POST" });
         await loadDay();
@@ -310,12 +267,7 @@
 
     updateClock();
     renderAll();
-
     setInterval(updateClock, 1000);
-    // Recalcula "siguiente/pasado" cada minuto para no recargar tarjetas en edición cada segundo
-    setInterval(() => {
-      if (!editing) renderAll();
-    }, 30000);
   }
 
   document.addEventListener("DOMContentLoaded", async () => {

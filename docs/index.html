@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horarios de Lactancia</title>
+<title>Bitácora de lactancia</title>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -12,7 +12,7 @@
     <div class="header-inner">
       <div class="brand">
         <span class="brand-dot"></span>
-        <h1>Horarios de Lactancia</h1>
+        <h1>Bitácora de lactancia</h1>
       </div>
       <div class="clock-block">
         <time id="clock" class="clock" aria-live="polite">--:--:--</time>
@@ -42,32 +42,20 @@
         <div class="column-heading">
           <span class="column-icon" aria-hidden="true">🍼</span>
           <h2 id="titulo-bebe">Tomas del Bebé</h2>
-          <button id="interval-tomas" class="interval-pill" type="button">cada 3 h</button>
-          <div id="interval-edit-tomas" class="interval-edit" hidden>
-            <input class="interval-input" type="number" min="1" max="24" aria-label="Intervalo de tomas en horas">
-            <button class="interval-save" type="button" title="Guardar intervalo">Guardar</button>
-            <button class="interval-cancel" type="button" title="Cancelar" aria-label="Cancelar">
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M18.3 5.71 12 12l6.3 6.29-1.42 1.42L10.59 13.4 4.3 19.7 2.88 18.3 9.17 12 2.88 5.71 4.3 4.29l6.29 6.3 6.29-6.3z" fill="currentColor"/></svg>
-            </button>
-          </div>
+          <span id="interval-tomas" class="interval-pill" title="Promedio entre tomas">cada 3 h</span>
         </div>
         <div id="lista-tomas" class="card-list"></div>
+        <button id="add-toma" class="add-record-btn" type="button">+ Agregar registro</button>
       </section>
 
       <section class="schedule-column" aria-labelledby="titulo-mama">
         <div class="column-heading">
           <span class="column-icon" aria-hidden="true">🤱</span>
           <h2 id="titulo-mama">Extracciones Mamá</h2>
-          <button id="interval-extracciones" class="interval-pill" type="button">cada 2 h</button>
-          <div id="interval-edit-extracciones" class="interval-edit" hidden>
-            <input class="interval-input" type="number" min="1" max="24" aria-label="Intervalo de extracciones en horas">
-            <button class="interval-save" type="button" title="Guardar intervalo">Guardar</button>
-            <button class="interval-cancel" type="button" title="Cancelar" aria-label="Cancelar">
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M18.3 5.71 12 12l6.3 6.29-1.42 1.42L10.59 13.4 4.3 19.7 2.88 18.3 9.17 12 2.88 5.71 4.3 4.29l6.29 6.3 6.29-6.3z" fill="currentColor"/></svg>
-            </button>
-          </div>
+          <span id="interval-extracciones" class="interval-pill" title="Promedio entre extracciones">cada 2 h</span>
         </div>
         <div id="lista-extracciones" class="card-list"></div>
+        <button id="add-extraccion" class="add-record-btn" type="button">+ Agregar registro</button>
       </section>
 
     </div>
@@ -79,39 +67,30 @@
         <div><span>Extraído</span><strong id="extracted-total">0 ml</strong></div>
         <div><span>Faltante</span><strong id="remaining-total">640 ml</strong></div>
       </div>
+      <div class="summary-actions">
+        <a class="primary-btn chart-btn" href="/stats" title="Ver gráfico de extracciones" aria-label="Ver gráfico de extracciones">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 19V5h2v14H5Zm6 0V9h2v10h-2Zm6 0V2h2v17h-2Z" fill="currentColor"/></svg>
+          <span>Ver gráfico de extracciones</span>
+        </a>
+      </div>
     </section>
   </main>
 
   <footer class="app-footer">
     <div class="footer-actions">
-      <button id="btn-reset" class="reset-btn" type="button">Restablecer horarios por defecto</button>
+      <button id="btn-reset" class="reset-btn" type="button">Borrar registros del día y dejar solo el de las 00:00</button>
     </div>
   </footer>
 
   <!-- Plantilla de tarjeta (se clona por JS) -->
   <template id="tpl-card">
     <article class="event-card">
-      <div class="card-view">
-        <div class="card-label"></div>
-        <button class="card-time" type="button"></button>
-          <select class="volume-select" aria-label="Volumen en mililitros"></select>
-        <span class="next-tag">• Siguiente</span>
-      </div>
-      <div class="card-edit">
-        <input type="time" class="time-input" step="60">
-        <div class="edit-actions">
-          <button class="edit-btn edit-cascade" type="button" title="Guardar y reajustar toda la lista">
-            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.75 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" fill="currentColor"/></svg>
-            <span>Cascada</span>
-          </button>
-          <button class="edit-btn edit-single" type="button" title="Guardar solo este horario">
-            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z" fill="currentColor"/></svg>
-            <span>Individual</span>
-          </button>
-          <button class="edit-btn edit-cancel" type="button" title="Cancelar">
-            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M18.3 5.71 12 12l6.3 6.29-1.42 1.42L10.59 13.4 4.3 19.7 2.88 18.3 9.17 12 2.88 5.71 4.3 4.29l6.29 6.3 6.29-6.3z" fill="currentColor"/></svg>
-          </button>
-        </div>
+      <div class="card-fields">
+        <input type="time" class="time-input" step="60" aria-label="Hora">
+        <select class="type-select" aria-label="Tipo"></select>
+        <select class="content-select" aria-label="Contenido"></select>
+        <select class="volume-select" aria-label="Volumen en mililitros"></select>
+        <button class="delete-record" type="button" title="Eliminar registro" aria-label="Eliminar registro">×</button>
       </div>
     </article>
   </template>
