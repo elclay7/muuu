@@ -53,7 +53,9 @@
     const result = await request(`/api/extractions-summary?${params}`);
     const items = result.data;
     const total = items.reduce((sum, item) => sum + item.ml, 0);
+    const average = items.length ? Math.round(total / items.length) : 0;
     document.getElementById("total-ml").textContent = `${total} ml`;
+    document.getElementById("daily-average").textContent = `${average} ml/día`;
     document.getElementById("days-count").textContent = `${items.length} ${items.length === 1 ? "día" : "días"} con datos`;
     document.getElementById("chart-status").textContent = items.length ? "" : "No hay extracciones registradas en este rango.";
     if (items.length) renderChart(items);

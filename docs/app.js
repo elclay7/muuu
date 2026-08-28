@@ -253,7 +253,7 @@
     document.getElementById("add-extraccion").addEventListener("click", () => addRecord("extracciones"));
 
     document.getElementById("btn-reset").addEventListener("click", async () => {
-      const confirmed = window.confirm("¿Borrar todos los registros del día y dejar solo el de las 00:00?");
+      const confirmed = window.confirm("¿Borrar todos los registros del día?");
       if (confirmed) {
         await request(`/api/day/reset?date=${selectedDate}`, { method: "POST" });
         await loadDay();
