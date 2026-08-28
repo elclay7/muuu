@@ -47,18 +47,19 @@
   }
 
   async function loadStats() {
-    const params = new URLSearchParams();
-    if (fromInput.value) params.set("from", fromInput.value);
-    if (toInput.value) params.set("to", toInput.value);
-    const result = await request(`/api/extractions-summary?${params}`);
-    const items = result.data;
-    const total = items.reduce((sum, item) => sum + item.ml, 0);
-    const average = items.length ? Math.round(total / items.length) : 0;
+    const result = await request("/api/extractions-summary");
+    const allItems = result.data;
+    const total = allItems.reduce((sum, item) => sum + item.ml, 0);
+    const average = allItems.length ? Math.round(total / allItems.length) : 0;
     document.getElementById("total-ml").textContent = `${total} ml`;
     document.getElementById("daily-average").textContent = `${average} ml/día`;
-    document.getElementById("days-count").textContent = `${items.length} ${items.length === 1 ? "día" : "días"} con datos`;
-    document.getElementById("chart-status").textContent = items.length ? "" : "No hay extracciones registradas en este rango.";
-    if (items.length) renderChart(items);
+    document.getElementById("days-count").textContent = `${allItems.length} ${allItems.length === 1 ? "día" : "días"} con datos`;
+
+    const from = fromInput.value;
+    const to = toInput.value;
+    const chartItems = allItems.filter((item) => (!from || item.date >= from) && (!to || item.date <= to));
+    document.getElementById("chart-status").textContent = chartItems.length ? "" : "No hay extracciones registradas en este rango.";
+    if (chartItems.length) renderChart(chartItems);
     else chart.innerHTML = "";
   }
 
