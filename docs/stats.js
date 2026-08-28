@@ -51,9 +51,9 @@
     const allItems = result.data;
     const total = allItems.reduce((sum, item) => sum + item.ml, 0);
     const average = allItems.length ? Math.round(total / allItems.length) : 0;
-    document.getElementById("total-ml").textContent = `${total} ml`;
-    document.getElementById("daily-average").textContent = `${average} ml/día`;
-    document.getElementById("days-count").textContent = `${allItems.length} ${allItems.length === 1 ? "día" : "días"} con datos`;
+    document.getElementById("total-ml").textContent = `${(total / 1000).toFixed(2)} L`;
+    document.getElementById("daily-average").textContent = `${average} ml`;
+    document.getElementById("days-count").textContent = `${allItems.length}`;
 
     const from = fromInput.value;
     const to = toInput.value;
