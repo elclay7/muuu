@@ -23,15 +23,14 @@ estadísticas de extracciones por rango de fechas.
 ├── Dockerfile.nginx       # Imagen Docker del servidor Nginx.
 ├── nginx.conf             # Rutas de archivos estáticos y proxy de la API.
 ├── README.md              # Descripción, tecnologías y estructura del proyecto.
-├── html/                  # Frontend que se despliega en Nginx (fuente de verdad).
-│   ├── index.html         # Pantalla principal de horarios y registro diario.
-│   ├── app.js             # Navegación diaria, edición y guardado de registros.
-│   ├── stats.html         # Pantalla de estadísticas de extracciones.
-│   ├── stats.js           # Filtros y gráfico diario de mililitros extraídos.
-│   ├── login.html         # Pantalla de inicio de sesión.
-│   ├── login.js           # Lógica de autenticación del usuario.
-│   ├── admin.html         # Panel de administración de usuarios.
-│   ├── admin.js           # Gestión de usuarios y configuración inicial.
-│   └── styles.css         # Estilos compartidos, temas claro/oscuro y diseño responsive.
-└── docs/                  # Copia de referencia del frontend (sincronizada con html/).
+└── html/                  # Frontend que se despliega en Nginx.
+    ├── index.html         # Pantalla principal de horarios y registro diario.
+    ├── app.js             # Navegación diaria, edición y guardado de registros.
+    ├── stats.html         # Pantalla de estadísticas de extracciones.
+    ├── stats.js           # Filtros y gráfico diario de mililitros extraídos.
+    ├── login.html         # Pantalla de inicio de sesión.
+    ├── login.js           # Lógica de autenticación del usuario.
+    ├── admin.html         # Panel de administración de usuarios.
+    ├── admin.js           # Gestión de usuarios y configuración inicial.
+    └── styles.css         # Estilos compartidos, temas claro/oscuro y diseño responsive.
 ```
