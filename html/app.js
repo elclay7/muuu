@@ -162,7 +162,7 @@
 
       const contentSelect = node.querySelector(".content-select");
       if (group === "tomas") {
-        contentSelect.innerHTML = '<option value="formula">Fórmula</option><option value="leche materna">Leche materna</option>';
+        contentSelect.innerHTML = '<option value="formula">Fórmula</option><option value="leche materna">Leche materna</option><option value="mixto">Mixto</option>';
         contentSelect.value = record.content;
         contentSelect.addEventListener("change", () => {
           record.content = contentSelect.value;

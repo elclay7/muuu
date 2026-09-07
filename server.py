@@ -21,7 +21,7 @@ DEFAULTS = {
 }
 RECORD_LIMIT = 50
 TOMA_TYPES = {"toma", "relleno"}
-FEED_CONTENTS = {"formula", "leche materna"}
+FEED_CONTENTS = {"formula", "leche materna", "mixto"}
 EXTRACTION_TYPE = "extracción"
 sessions = {}
 
