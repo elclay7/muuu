@@ -11,8 +11,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
 DB_PATH = os.environ.get("DB_PATH", "/data/app.sqlite3")
-HOST = "0.0.0.0"
-PORT = 3000
+HOST = os.environ.get("HOST", "0.0.0.0")
+PORT = int(os.environ.get("PORT", "3000"))
 SESSION_TTL = 60 * 60 * 24 * 30
 START_DATE = date(2026, 8, 10)
 DEFAULTS = {
