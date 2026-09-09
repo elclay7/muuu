@@ -10,7 +10,36 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  test:
+    name: Tests (API smoke)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout app
+        uses: actions/checkout@v4
+
+      - name: Checkout harness
+        uses: actions/checkout@v4
+        with:
+          repository: elclay7/harness
+          path: harness
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install test deps
+        run: python -m pip install --disable-pip-version-check pytest requests
+
+      - name: Run API tests
+        working-directory: harness
+        env:
+          APP_DIR: ${{ github.workspace }}
+          PYTHONPATH: ${{ github.workspace }}/harness
+        run: python -m pytest projects/muuu -m "not ui" -q
+
   deploy:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
