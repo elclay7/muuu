@@ -324,6 +324,40 @@ class Handler(BaseHTTPRequestHandler):
                 if total:
                     result.append({"date": row["schedule_date"], "ml": total})
             self.send_json(HTTPStatus.OK, {"data": result})
+        elif path == "/api/feed-summary":
+            if not self.require_session():
+                return
+            start_date = query.get("from")
+            end_date = query.get("to")
+            if (start_date and not valid_date(start_date)) or (end_date and not valid_date(end_date)) or (start_date and end_date and start_date > end_date):
+                self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Rango de fechas inválido"})
+                return
+            conditions = ["group_name = 'tomas'", "records IS NOT NULL"]
+            params = []
+            if start_date:
+                conditions.append("schedule_date >= ?")
+                params.append(start_date)
+            if end_date:
+                conditions.append("schedule_date <= ?")
+                params.append(end_date)
+            with connection() as db:
+                rows = db.execute(
+                    f"SELECT schedule_date, records FROM daily_schedules WHERE {' AND '.join(conditions)} ORDER BY schedule_date",
+                    params,
+                ).fetchall()
+            result = []
+            for row in rows:
+                totals = {"formula": 0, "materna": 0, "mixto": 0}
+                for record in json.loads(row["records"]):
+                    volume = record.get("volume") or 0
+                    content = record.get("content")
+                    if content == "leche materna":
+                        totals["materna"] += volume
+                    elif content in totals:
+                        totals[content] += volume
+                if any(totals.values()):
+                    result.append({"date": row["schedule_date"], **totals})
+            self.send_json(HTTPStatus.OK, {"data": result})
         elif path == "/api/users":
             if not self.require_admin():
                 return

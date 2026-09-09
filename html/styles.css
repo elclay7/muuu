@@ -8,6 +8,8 @@
   --accent-shadow: rgba(0, 113, 227, 0.18);
   --border-soft: rgba(0, 0, 0, 0.06);
   --header-bg: rgba(245, 245, 247, 0.78);
+  --chart-materna: #ff9500;
+  --chart-mixto: #af52de;
   --radius: 18px;
   --font-main: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
 }
@@ -21,6 +23,8 @@ body.dark-mode {
   --border-soft: rgba(255, 255, 255, 0.12);
   --header-bg: rgba(28, 28, 30, 0.86);
   --accent-shadow: rgba(77, 166, 255, 0.22);
+  --chart-materna: #ff9f0a;
+  --chart-mixto: #bf5af2;
   background:
     radial-gradient(circle at 15% 0%, rgba(77, 166, 255, 0.1), transparent 45%),
     radial-gradient(circle at 100% 20%, rgba(255, 179, 71, 0.08), transparent 40%),
@@ -823,6 +827,56 @@ input:focus-visible {
   stroke-width: 3;
 }
 
+#chart-feed {
+  display: block;
+  width: 100%;
+  height: 360px;
+  overflow: visible;
+}
+
+.chart-panel + .chart-panel {
+  margin-top: 24px;
+}
+
+.chart-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.chart-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.legend-formula { background: var(--accent); }
+.legend-materna { background: var(--chart-materna); }
+.legend-mixto { background: var(--chart-mixto); }
+
+.feed-bar.bar-formula { fill: var(--accent); }
+.feed-bar.bar-materna { fill: var(--chart-materna); }
+.feed-bar.bar-mixto { fill: var(--chart-mixto); }
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -916,7 +970,8 @@ input:focus-visible {
   }
 
   .chart-wrap,
-  #chart {
+  #chart,
+  #chart-feed {
     min-height: 280px;
     height: 280px;
   }

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Estadísticas de extracciones</title>
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
   <header class="app-header">
@@ -38,15 +38,31 @@
     </section>
 
     <section class="chart-panel" aria-labelledby="chart-title">
-      <h3 id="chart-title">Resumen diario</h3>
+      <h3 id="chart-title">Extracciones</h3>
       <p id="chart-status" class="chart-status" role="status">Cargando datos...</p>
       <div class="chart-wrap">
         <svg id="chart" role="img" aria-labelledby="chart-title chart-description" viewBox="0 0 900 360" preserveAspectRatio="none"></svg>
       </div>
       <p id="chart-description" class="sr-only"></p>
     </section>
+
+    <section class="chart-panel" aria-labelledby="feed-chart-title">
+      <div class="chart-panel-head">
+        <h3 id="feed-chart-title">Tomas del bebé por tipo de leche</h3>
+        <ul class="chart-legend">
+          <li><span class="legend-dot legend-formula"></span>Fórmula</li>
+          <li><span class="legend-dot legend-materna"></span>Leche materna</li>
+          <li><span class="legend-dot legend-mixto"></span>Mixto</li>
+        </ul>
+      </div>
+      <p id="feed-status" class="chart-status" role="status">Cargando datos...</p>
+      <div class="chart-wrap">
+        <svg id="chart-feed" role="img" aria-labelledby="feed-chart-title feed-chart-description" viewBox="0 0 900 360" preserveAspectRatio="none"></svg>
+      </div>
+      <p id="feed-chart-description" class="sr-only"></p>
+    </section>
   </main>
 
-  <script src="stats.js?v=3"></script>
+  <script src="stats.js?v=4"></script>
 </body>
 </html>
