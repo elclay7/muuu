@@ -21,6 +21,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: elclay7/harness
+          token: ${{ secrets.HARNESS_TOKEN }}
           path: harness
 
       - name: Set up Python
