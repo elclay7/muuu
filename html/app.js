@@ -24,15 +24,26 @@
     return data;
   }
 
-  async function saveSchedules() {
-    await request("/api/day", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...schedules, date: selectedDate, pediatric_ml: Number(document.getElementById("pediatric-ml").value) })
+  let saveQueue = Promise.resolve();
+  let reloadEpoch = 0;
+  function saveSchedules() {
+    // Serializa los PUT: cada guardado espera al anterior para que un estado
+    // viejo no pise a uno nuevo cuando los cambios llegan rapido (p.ej.
+    // seleccionar ml y agregar registro casi a la vez). El payload se congela
+    // al encolar (dia + datos de ese momento), para que un save pendiente no
+    // termine escribiendo el dia o los registros equivocados; si mientras
+    // tanto el dia se recargo o borro, el save se descarta en silencio.
+    const epoch = reloadEpoch;
+    const payload = JSON.stringify({ ...schedules, date: selectedDate, pediatric_ml: Number(document.getElementById("pediatric-ml").value) });
+    saveQueue = saveQueue.catch(() => {}).then(() => {
+      if (epoch !== reloadEpoch) return;
+      return request("/api/day", { method: "PUT", headers: { "Content-Type": "application/json" }, body: payload });
     });
+    return saveQueue;
   }
 
   async function loadDay() {
+    reloadEpoch++;  // invalida los PUT pendientes de un dia/recarga anterior
     Object.assign(schedules, await request(`/api/day?date=${selectedDate}`));
     document.getElementById("pediatric-ml").value = schedules.pediatric_ml;
     const displayDate = new Intl.DateTimeFormat("es-CL", { timeZone: TIMEZONE, day: "numeric", month: "long", year: "numeric" }).format(new Date(`${selectedDate}T12:00:00`));
@@ -68,11 +79,21 @@
     return `cada ${hours} h`;
   }
 
-  function defaultRecord(group) {
-    if (group === "tomas") {
-      return { time: "00:00", type: "toma", content: "formula", volume: null };
+  function lastVolume(group) {
+    const records = schedules[group]?.records || [];
+    for (let i = records.length - 1; i >= 0; i--) {
+      const volume = records[i].volume;
+      if (volume !== null && volume !== undefined && volume !== "") return Number(volume);
     }
-    return { time: "00:00", type: "extracción", volume: null };
+    return null;
+  }
+
+  function defaultRecord(group) {
+    const volume = lastVolume(group);
+    if (group === "tomas") {
+      return { time: "00:00", type: "toma", content: "formula", volume };
+    }
+    return { time: "00:00", type: "extracción", volume };
   }
 
   function addRecord(group) {
